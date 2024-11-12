@@ -9,9 +9,14 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published var currentArticleIndex: Int = 0
     
     private var _articles: [Article] = []
+    private var articleBoundaries: [String] = []
     
     var articles: [Article] {
         _articles
+    }
+    
+    var displayArticleIndex: Int {
+        currentArticleIndex + 1
     }
     
     private var timer: Timer?
@@ -53,12 +58,20 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     
     private func createDigestText() -> String {
         var digestParts: [String] = []
+        articleBoundaries = []
         
+        // Introduction
         digestParts.append("Welcome to your news digest. Here are today's top stories from \(_articles.first?.source.name ?? "your selected sources").")
         
+        // Articles
         for (index, article) in _articles.enumerated() {
-            digestParts.append("...")
-            digestParts.append("Headline \(index + 1):")
+            // Add article boundary marker
+            let boundary = "---ARTICLE\(index + 1)---"
+            digestParts.append(boundary)
+            articleBoundaries.append(boundary)
+            
+            // Use one-based indexing for spoken text
+            //digestParts.append("Article \(index + 1):")
             digestParts.append(article.title)
             
             if let description = article.description, !description.isEmpty {
@@ -67,7 +80,7 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
             }
         }
         
-        digestParts.append("...")
+        digestParts.append("---END---")
         digestParts.append("That's all for now. Thank you for listening.")
         
         return digestParts.joined(separator: "\n\n")
@@ -78,11 +91,10 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         let utterance = AVSpeechUtterance(string: text)
         
         // Customize voice and speaking style
-        utterance.rate = 0.52  // Slightly slower for better comprehension
-        utterance.pitchMultiplier = 1.1  // Slightly higher pitch for engagement
+        utterance.rate = 0.52
+        utterance.pitchMultiplier = 1.1
         utterance.volume = 1.0
         
-        // Use a high-quality voice if available
         if let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.premium.en-US.samantha") {
             utterance.voice = voice
         } else {
@@ -144,8 +156,25 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
     
     // AVSpeechSynthesizerDelegate methods
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
+        let text = utterance.speechString as NSString
+        let currentText = text.substring(with: characterRange)
+        
+        // Check if we've hit an article boundary
+        for (index, boundary) in articleBoundaries.enumerated() {
+            if currentText.contains(boundary) {
+                DispatchQueue.main.async {
+                    self.currentArticleIndex = index
+                    self.debugMessage += "\nNow playing article \(index + 1)"
+                }
+                break
+            }
+        }
+    }
+    
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
         debugMessage += "\nStarted speaking"
+        currentArticleIndex = 0  // Reset to first article
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {

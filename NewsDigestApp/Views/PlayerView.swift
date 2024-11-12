@@ -16,7 +16,7 @@ struct PlayerView: View {
                             .font(.system(size: 60))
                             .foregroundColor(.blue)
                         
-                        Text("Now Playing")
+                        Text("Now Playing (\(audioService.displayArticleIndex)/\(audioService.articles.count))")
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
@@ -25,6 +25,16 @@ struct PlayerView: View {
                             .fontWeight(.medium)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
+                            .animation(.easeInOut, value: audioService.currentArticleIndex)
+                        
+                        HStack(spacing: 8) {
+                            ForEach(0..<audioService.articles.count, id: \.self) { index in
+                                Circle()
+                                    .fill(index == audioService.currentArticleIndex ? Color.blue : Color.gray.opacity(0.3))
+                                    .frame(width: 8, height: 8)
+                                    .animation(.easeInOut, value: audioService.currentArticleIndex)
+                            }
+                        }
                     }
                     .padding(.top)
                     
@@ -34,10 +44,10 @@ struct PlayerView: View {
                             .font(.headline)
                             .padding(.horizontal)
                         
-                        ForEach(Array(audioService.articles.prefix(3).enumerated()), id: \.element.id) { index, article in
+                        ForEach(Array(audioService.articles.enumerated()), id: \.element.id) { index, article in
                             ArticleDebugCard(
                                 article: article,
-                                index: index,
+                                index: index, 
                                 isExpanded: selectedArticleIndex == index,
                                 onTap: {
                                     withAnimation {
