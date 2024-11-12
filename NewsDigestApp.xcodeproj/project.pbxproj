@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3530E68F2CE3D69400456A0F /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 3530E68E2CE3D69400456A0F /* README.md */; };
-		3530E6912CE3D6B800456A0F /* gitignore.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3530E6902CE3D6B800456A0F /* gitignore.txt */; };
+		3530E6912CE3D6B800456A0F /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 3530E6902CE3D6B800456A0F /* .gitignore */; };
 		3530E6932CE3D6D200456A0F /* license.md in Resources */ = {isa = PBXBuildFile; fileRef = 3530E6922CE3D6D200456A0F /* license.md */; };
 /* End PBXBuildFile section */
 
@@ -34,7 +34,7 @@
 		3530E6402CE3B94D00456A0F /* NewsDigestAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NewsDigestAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3530E64A2CE3B94D00456A0F /* NewsDigestAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NewsDigestAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3530E68E2CE3D69400456A0F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		3530E6902CE3D6B800456A0F /* gitignore.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = gitignore.txt; sourceTree = "<group>"; };
+		3530E6902CE3D6B800456A0F /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		3530E6922CE3D6D200456A0F /* license.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = license.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -86,7 +86,7 @@
 			children = (
 				3530E68E2CE3D69400456A0F /* README.md */,
 				3530E6922CE3D6D200456A0F /* license.md */,
-				3530E6902CE3D6B800456A0F /* gitignore.txt */,
+				3530E6902CE3D6B800456A0F /* .gitignore */,
 				3530E6322CE3B94B00456A0F /* NewsDigestApp */,
 				3530E6432CE3B94D00456A0F /* NewsDigestAppTests */,
 				3530E64D2CE3B94D00456A0F /* NewsDigestAppUITests */,
@@ -226,7 +226,7 @@
 			files = (
 				3530E6932CE3D6D200456A0F /* license.md in Resources */,
 				3530E68F2CE3D69400456A0F /* README.md in Resources */,
-				3530E6912CE3D6B800456A0F /* gitignore.txt in Resources */,
+				3530E6912CE3D6B800456A0F /* .gitignore in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

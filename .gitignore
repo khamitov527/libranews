@@ -42,5 +42,4 @@ injected_container.swift
 
 # API Keys and Secrets
 Config.plist
-NewsDigestApp/Secrets.swift
-!NewsDigestApp/Secrets.example.swift
+NewsDigestApp/Configuration/Secrets.swift
