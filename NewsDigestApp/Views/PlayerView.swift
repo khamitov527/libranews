@@ -7,30 +7,45 @@ struct PlayerView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 40) {
-                ScrollView {
-                    Text(audioService.debugMessage)
-                        .font(.system(.footnote, design: .monospaced))
-                        .padding()
-                        .background(Color.black.opacity(0.05))
-                        .cornerRadius(8)
+            VStack(spacing: 32) {
+                // Current Article Display
+                VStack(spacing: 16) {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 60))
+                        .foregroundColor(.blue)
+                    
+                    Text("Now Playing")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(audioService.currentArticleTitle)
+                        .font(.title3)
+                        .fontWeight(.medium)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                 }
-                .frame(height: 200)
+                .padding(.top)
                 
-                Image(systemName: "waveform")
-                    .font(.system(size: 100))
-                    .foregroundColor(.blue)
-                
-                Text("Your 5-Minute News Digest")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                AudioPlayerControls(audioService: audioService)
+                // Debug Info (collapsed by default)
+                DisclosureGroup("Debug Info") {
+                    ScrollView {
+                        Text(audioService.debugMessage)
+                            .font(.system(.footnote, design: .monospaced))
+                            .padding()
+                            .background(Color.black.opacity(0.05))
+                            .cornerRadius(8)
+                    }
+                    .frame(height: 200)
+                }
+                .padding()
                 
                 Spacer()
+                
+                // Audio Controls
+                AudioPlayerControls(audioService: audioService)
+                    .padding(.bottom)
             }
-            .padding()
-            .navigationTitle("Now Playing")
+            .navigationTitle("News Digest")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
