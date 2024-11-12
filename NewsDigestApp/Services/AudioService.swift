@@ -8,8 +8,13 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published var debugMessage: String = ""
     @Published var currentArticleIndex: Int = 0
     
+    private var _articles: [Article] = []
+    
+    var articles: [Article] {
+        _articles
+    }
+    
     private var timer: Timer?
-    private var articles: [Article] = []
     private var currentUtterance: AVSpeechUtterance?
     private var shouldRestartPlayback = false
     
@@ -19,10 +24,10 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
     
     func setArticles(_ articles: [Article], restartPlayback: Bool = false) {
-        self.articles = articles
+        self._articles = Array(articles.prefix(3))
         self.shouldRestartPlayback = restartPlayback
         self.currentArticleIndex = 0
-        debugMessage = "Articles updated: \(articles.count) articles"
+        debugMessage = "Articles updated: \(self.articles.count) articles"
         
         if restartPlayback && isPlaying {
             stopPlayback()
@@ -31,7 +36,7 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
     
     func playDigest() {
-        guard !articles.isEmpty else {
+        guard !_articles.isEmpty else {
             debugMessage = "No articles available"
             return
         }
@@ -41,7 +46,6 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
             return
         }
         
-        // Create a more engaging narrative
         let digestText = createDigestText()
         debugMessage = "Prepared digest text, length: \(digestText.count) characters"
         playText(digestText)
@@ -50,28 +54,19 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private func createDigestText() -> String {
         var digestParts: [String] = []
         
-        // Introduction
-        digestParts.append("Welcome to your news digest. Here are today's top stories from \(articles.first?.source.name ?? "your selected sources").")
+        digestParts.append("Welcome to your news digest. Here are today's top stories from \(_articles.first?.source.name ?? "your selected sources").")
         
-        // Articles
-        for (index, article) in articles.enumerated() {
-            // Add a pause marker
+        for (index, article) in _articles.enumerated() {
             digestParts.append("...")
-            
-            // Headline introduction
             digestParts.append("Headline \(index + 1):")
-            
-            // Title with emphasis
             digestParts.append(article.title)
             
-            // Description if available
             if let description = article.description, !description.isEmpty {
                 digestParts.append("Here's more detail:")
                 digestParts.append(description)
             }
         }
         
-        // Conclusion
         digestParts.append("...")
         digestParts.append("That's all for now. Thank you for listening.")
         
@@ -102,10 +97,10 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
     
     var currentArticleTitle: String {
-        guard !articles.isEmpty && currentArticleIndex < articles.count else {
+        guard !_articles.isEmpty && currentArticleIndex < _articles.count else {
             return "No article playing"
         }
-        return articles[currentArticleIndex].title
+        return _articles[currentArticleIndex].title
     }
     
     func stopPlayback() {
