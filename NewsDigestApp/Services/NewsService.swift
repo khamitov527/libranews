@@ -6,7 +6,7 @@ class NewsService: ObservableObject {
     @Published var isLoading = false
     @Published var error: Error?
     
-    private let apiKey = APIKeys.newsAPIKey
+    private let apiKey = Secrets.newsAPIKey
     
     func fetchSources() {
         isLoading = true
