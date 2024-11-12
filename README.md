@@ -1,6 +1,6 @@
 # News Digest App
 
-A SwiftUI app that creates personalized audio news digests from selected sources using NewsAPI.
+A SwiftUI app that creates personalized audio news digests from selected sources and topics using NewsAPI.
 
 ## Features
 
@@ -19,11 +19,11 @@ A SwiftUI app that creates personalized audio news digests from selected sources
 
 1. Clone the repository
 ```bash
-git clone https://github.com/YourUsername/news-digest-app.git
+git clone https://github.com/khamitov527/nextnews.git
 ```
 
 2. Add your NewsAPI key
-- Open `NewsService.swift`
+- Open `Service.swift`
 - Replace the empty `apiKey` string with your NewsAPI key
 
 3. Build and run the project in Xcode
