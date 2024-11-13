@@ -10,6 +10,10 @@ class NewsService: ObservableObject {
     
     private let apiKey = Secrets.newsAPIKey
     
+    func clearArticles() {
+        articles = []
+    }
+    
     var filteredSources: [NewsSource] {
         guard !selectedTopics.isEmpty else { return [] }
         return availableSources.filter { source in

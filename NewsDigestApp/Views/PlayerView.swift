@@ -1,163 +1,128 @@
 import SwiftUI
 
+// MARK: - PlayerView
 struct PlayerView: View {
+    // MARK: - Properties
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var audioService: AudioService
     @State private var hasStartedPlaying = false
     @State private var selectedArticleIndex: Int? = nil
     
+    // MARK: - Body
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 32) {
-                    // Current Article Display
-                    VStack(spacing: 16) {
-                        Image(systemName: "waveform")
-                            .font(.system(size: 60))
-                            .foregroundColor(.blue)
-                        
-                        Text("Now Playing (\(audioService.displayArticleIndex)/\(audioService.articles.count))")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(audioService.currentArticleTitle)
-                            .font(.title3)
-                            .fontWeight(.medium)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                            .animation(.easeInOut, value: audioService.currentArticleIndex)
-                        
-                        HStack(spacing: 8) {
-                            ForEach(0..<audioService.articles.count, id: \.self) { index in
-                                Circle()
-                                    .fill(index == audioService.currentArticleIndex ? Color.blue : Color.gray.opacity(0.3))
-                                    .frame(width: 8, height: 8)
-                                    .animation(.easeInOut, value: audioService.currentArticleIndex)
-                            }
-                        }
-                    }
-                    .padding(.top)
-                    
-                    // Articles Debug View
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Articles Detail")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        ForEach(Array(audioService.articles.enumerated()), id: \.element.id) { index, article in
-                            ArticleDebugCard(
-                                article: article,
-                                index: index, 
-                                isExpanded: selectedArticleIndex == index,
-                                onTap: {
-                                    withAnimation {
-                                        if selectedArticleIndex == index {
-                                            selectedArticleIndex = nil
-                                        } else {
-                                            selectedArticleIndex = index
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    
+                    nowPlayingSection
+                    articlesSection
                     Spacer()
-                    
-                    // Audio Controls
-                    AudioPlayerControls(audioService: audioService)
-                        .padding(.bottom)
+                    playerControls
                 }
                 .padding()
             }
             .navigationTitle("News Digest")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        audioService.pauseDigest()
-                        dismiss()
-                    }
+            .toolbar { navigationButtons }
+            .onAppear(perform: handleOnAppear)
+        }
+    }
+    
+    // MARK: - Views
+    private var nowPlayingSection: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "waveform")
+                .font(.system(size: 60))
+                .foregroundColor(.blue)
+            
+            Text("Now Playing (\(audioService.displayArticleIndex)/\(audioService.totalArticles))")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            Text(audioService.currentArticleTitle)
+                .font(.title3)
+                .fontWeight(.medium)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .animation(.easeInOut, value: audioService.currentArticleIndex)
+            
+            // Progress indicators
+            HStack(spacing: 8) {
+                ForEach(0..<audioService.articles.count, id: \.self) { index in
+                    Circle()
+                        .fill(index == audioService.currentArticleIndex ? Color.blue : Color.gray.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                        .animation(.easeInOut, value: audioService.currentArticleIndex)
                 }
             }
-            .onAppear {
-                if !hasStartedPlaying {
-                    audioService.playDigest()
-                    hasStartedPlaying = true
+        }
+        .padding(.top)
+    }
+    
+    private var articlesSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Articles")
+                .font(.headline)
+                .padding(.horizontal)
+            
+            ForEach(Array(audioService.articles.enumerated()), id: \.element.id) { index, article in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Article \(index + 1)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(article.title)
+                        .font(.body)
+                        .fontWeight(.medium)
+                    
+                    if let description = article.description {
+                        Text(description)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(3)
+                    }
                 }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemBackground))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(index == audioService.currentArticleIndex ? Color.blue : Color.clear, lineWidth: 1)
+                )
             }
         }
     }
-}
-
-struct ArticleDebugCard: View {
-    let article: Article
-    let index: Int
-    let isExpanded: Bool
-    let onTap: () -> Void
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header (always visible)
-            Button(action: onTap) {
-                HStack {
-                    Text("Article \(index + 1)")
-                        .font(.headline)
-                        .foregroundColor(.blue)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.down")
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            if isExpanded {
-                // Title
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Title:")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Text(article.title)
-                        .font(.body)
-                }
-                
-                // Description
-                if let description = article.description {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Description:")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(description)
-                            .font(.body)
-                    }
-                }
-                
-                // Content
-                if let content = article.content {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Content:")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Text(content)
-                            .font(.body)
-                    }
-                }
-                
-                // Source
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Source:")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Text(article.source.name)
-                        .font(.body)
-                }
+    private var playerControls: some View {
+        AudioPlayerControls(audioService: audioService)
+            .padding(.bottom)
+    }
+    
+    private var navigationButtons: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button("Done") {
+                audioService.pauseDigest()
+                dismiss()
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+    }
+    
+    // MARK: - Methods
+    private func handleOnAppear() {
+        if !hasStartedPlaying {
+            audioService.startNewPlayback()
+            hasStartedPlaying = true
+        }
+    }
+    
+    private func handleArticleTap(_ index: Int) {
+        withAnimation {
+            if selectedArticleIndex == index {
+                selectedArticleIndex = nil
+            } else {
+                selectedArticleIndex = index
+            }
+        }
     }
 }

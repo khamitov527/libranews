@@ -2,109 +2,31 @@ import AVFoundation
 
 @MainActor
 class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
-    private let synthesizer = AVSpeechSynthesizer()
+    // MARK: - Published Properties
     @Published var isPlaying = false
     @Published var progress: Double = 0
     @Published var debugMessage: String = ""
     @Published var currentArticleIndex: Int = 0
     
+    // MARK: - Private Properties
+    private let synthesizer = AVSpeechSynthesizer()
     private var _articles: [Article] = []
+    private var timer: Timer?
+    private var currentUtterance: AVSpeechUtterance?
     private var articleBoundaries: [String] = []
     
-    var articles: [Article] {
-        _articles
-    }
+    // MARK: - Public Properties
     
     var displayArticleIndex: Int {
         currentArticleIndex + 1
     }
     
-    private var timer: Timer?
-    private var currentUtterance: AVSpeechUtterance?
-    private var shouldRestartPlayback = false
-    
-    override init() {
-        super.init()
-        synthesizer.delegate = self
+    var totalArticles: Int {
+        _articles.count
     }
     
-    func setArticles(_ articles: [Article], restartPlayback: Bool = false) {
-        self._articles = Array(articles.prefix(3))
-        self.shouldRestartPlayback = restartPlayback
-        self.currentArticleIndex = 0
-        debugMessage = "Articles updated: \(self.articles.count) articles"
-        
-        if restartPlayback && isPlaying {
-            stopPlayback()
-            playDigest()
-        }
-    }
-    
-    func playDigest() {
-        guard !_articles.isEmpty else {
-            debugMessage = "No articles available"
-            return
-        }
-        
-        if isPlaying && !shouldRestartPlayback {
-            debugMessage = "Playback already in progress"
-            return
-        }
-        
-        let digestText = createDigestText()
-        debugMessage = "Prepared digest text, length: \(digestText.count) characters"
-        playText(digestText)
-    }
-    
-    private func createDigestText() -> String {
-        var digestParts: [String] = []
-        articleBoundaries = []
-        
-        // Introduction
-        digestParts.append("Welcome to your news digest. Here are today's top stories from \(_articles.first?.source.name ?? "your selected sources").")
-        
-        // Articles
-        for (index, article) in _articles.enumerated() {
-            // Add article boundary marker
-            let boundary = "---ARTICLE\(index + 1)---"
-            digestParts.append(boundary)
-            articleBoundaries.append(boundary)
-            
-            // Use one-based indexing for spoken text
-            //digestParts.append("Article \(index + 1):")
-            digestParts.append(article.title)
-            
-            if let description = article.description, !description.isEmpty {
-                digestParts.append("Here's more detail:")
-                digestParts.append(description)
-            }
-        }
-        
-        digestParts.append("That's all for now. Thank you for listening.")
-        
-        return digestParts.joined(separator: "\n\n")
-    }
-    
-    private func playText(_ text: String) {
-        debugMessage = "Creating utterance..."
-        let utterance = AVSpeechUtterance(string: text)
-        
-        // Customize voice and speaking style
-        utterance.rate = 0.52
-        utterance.pitchMultiplier = 1.1
-        utterance.volume = 1.0
-        
-        if let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.premium.en-US.samantha") {
-            utterance.voice = voice
-        } else {
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        }
-        
-        currentUtterance = utterance
-        debugMessage += "\nAttempting to speak..."
-        synthesizer.speak(utterance)
-        isPlaying = true
-        startProgressTimer()
+    var articles: [Article] {
+        _articles
     }
     
     var currentArticleTitle: String {
@@ -114,12 +36,39 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         return _articles[currentArticleIndex].title
     }
     
-    func stopPlayback() {
-        debugMessage += "\nStopping playback..."
-        synthesizer.stopSpeaking(at: .immediate)
-        isPlaying = false
-        progress = 0
-        timer?.invalidate()
+    // MARK: - Initialization
+    override init() {
+        super.init()
+        synthesizer.delegate = self
+        debugMessage = "AudioService initialized"
+    }
+    
+    // MARK: - Public Methods
+    func setArticles(_ articles: [Article]) {
+        self._articles = Array(articles.prefix(3))
+        debugMessage = "Articles updated: \(self._articles.count) articles"
+    }
+    
+    func startNewPlayback() {
+        stopPlayback()
+        currentArticleIndex = 0
+        playDigest()
+    }
+    
+    func playDigest() {
+        guard !_articles.isEmpty else {
+            debugMessage = "No articles available"
+            return
+        }
+        
+        if isPlaying {
+            debugMessage = "Playback already in progress"
+            return
+        }
+        
+        let digestText = createDigestText()
+        debugMessage = "Prepared digest text, length: \(digestText.count) characters"
+        playText(digestText)
     }
     
     func pauseDigest() {
@@ -140,6 +89,73 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         startProgressTimer()
     }
     
+    func stopPlayback() {
+        debugMessage += "\nStopping playback..."
+        synthesizer.stopSpeaking(at: .immediate)
+        isPlaying = false
+        progress = 0
+        timer?.invalidate()
+        currentArticleIndex = 0
+    }
+    
+    // MARK: - Private Methods
+    private func createDigestText() -> String {
+        var digestParts: [String] = []
+        articleBoundaries = []
+        
+        // Introduction
+        digestParts.append("Welcome to your news digest. Here are today's top stories from \(_articles.first?.source.name ?? "your selected sources").")
+        
+        // Articles
+        for (index, article) in _articles.enumerated() {
+            // Add article boundary marker
+            let boundary = "---ARTICLE\(index)---"
+            digestParts.append(boundary)
+            articleBoundaries.append(boundary)
+            
+            // Article content
+            digestParts.append("Article \(index + 1):")
+            digestParts.append(article.title)
+            
+            if let description = article.description, !description.isEmpty {
+                digestParts.append("Here's more detail:")
+                digestParts.append(description)
+            }
+            
+            // Add pause between articles
+            digestParts.append("...")
+        }
+        
+        // Conclusion
+        digestParts.append("---END---")
+        digestParts.append("That's all for now. Thank you for listening.")
+        
+        return digestParts.joined(separator: "\n\n")
+    }
+    
+    private func playText(_ text: String) {
+        debugMessage += "\nCreating utterance..."
+        let utterance = AVSpeechUtterance(string: text)
+        
+        // Configure voice properties
+        utterance.rate = 0.52  // Slightly slower for better comprehension
+        utterance.pitchMultiplier = 1.1  // Slightly higher pitch for engagement
+        utterance.volume = 1.0
+        
+        // Use premium voice if available
+        if let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.premium.en-US.samantha") {
+            utterance.voice = voice
+        } else {
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        }
+        
+        currentUtterance = utterance
+        debugMessage += "\nAttempting to speak..."
+        synthesizer.speak(utterance)
+        isPlaying = true
+        startProgressTimer()
+    }
+    
     private func startProgressTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
@@ -154,7 +170,7 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         }
     }
     
-    // AVSpeechSynthesizerDelegate methods
+    // MARK: - AVSpeechSynthesizerDelegate
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
         let text = utterance.speechString as NSString
         let currentText = text.substring(with: characterRange)
@@ -173,7 +189,6 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
         debugMessage += "\nStarted speaking"
-        currentArticleIndex = 0  // Reset to first article
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
