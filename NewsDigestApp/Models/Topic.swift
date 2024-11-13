@@ -7,6 +7,7 @@ struct Topic: Identifiable, Hashable {
     let category: String
     
     static let available: [Topic] = [
+        Topic(name: "General News", icon: "newspaper", category: "general"),
         Topic(name: "Business", icon: "dollarsign.circle", category: "business"),
         Topic(name: "Technology", icon: "laptopcomputer", category: "technology"),
         Topic(name: "Entertainment", icon: "play.tv", category: "entertainment"),

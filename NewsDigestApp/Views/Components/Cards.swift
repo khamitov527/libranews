@@ -7,21 +7,28 @@ struct TopicCard: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 12) {
+            VStack(spacing: 8) { // Reduced spacing
                 Image(systemName: topic.icon)
-                    .font(.system(size: 24))
+                    .font(.system(size: 20)) // Slightly smaller icon
                     .foregroundColor(isSelected ? .white : .blue)
                 
                 Text(topic.name)
-                    .font(.subheadline)
+                    .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(isSelected ? .white : .primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .frame(height: 80) // Fixed height for consistency
+            .padding(.vertical, 8) // Reduced padding
             .background(isSelected ? Color.blue : Color(.systemBackground))
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.1), lineWidth: 1)
+            )
         }
     }
 }

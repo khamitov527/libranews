@@ -6,8 +6,9 @@ struct HomeView: View {
     @State private var showingPlayer = false
     
     private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible())
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
     ]
     
     var body: some View {
@@ -39,7 +40,7 @@ struct HomeView: View {
                                     topic: topic,
                                     isSelected: newsService.selectedTopics.contains(topic)
                                 ) {
-                                    withAnimation {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                         if newsService.selectedTopics.contains(topic) {
                                             newsService.selectedTopics.remove(topic)
                                         } else {
