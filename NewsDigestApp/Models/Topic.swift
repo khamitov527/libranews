@@ -1,15 +1,18 @@
 import Foundation
 
-struct Topic: Identifiable, Codable {
+struct Topic: Identifiable, Hashable {
     let id = UUID()
     let name: String
-    let icon: String // SF Symbol name
+    let icon: String
+    let category: String
     
     static let available: [Topic] = [
-        Topic(name: "Finance", icon: "dollarsign.circle"),
-        Topic(name: "Technology", icon: "laptopcomputer"),
-        Topic(name: "Media", icon: "play.tv"),
-        Topic(name: "Sports", icon: "sportscourt"),
-        Topic(name: "Science", icon: "flask")
+        Topic(name: "Business", icon: "dollarsign.circle", category: "business"),
+        Topic(name: "Technology", icon: "laptopcomputer", category: "technology"),
+        Topic(name: "Entertainment", icon: "play.tv", category: "entertainment"),
+        Topic(name: "Sports", icon: "sportscourt", category: "sports"),
+        Topic(name: "Science", icon: "flask", category: "science"),
+        Topic(name: "Health", icon: "heart", category: "health"),
+        Topic(name: "Politics", icon: "building.columns", category: "politics")
     ]
 }

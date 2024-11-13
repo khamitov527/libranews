@@ -5,8 +5,19 @@ class NewsService: ObservableObject {
     @Published var availableSources: [NewsSource] = []
     @Published var isLoading = false
     @Published var error: Error?
+    @Published var selectedTopics: Set<Topic> = []
+    @Published var selectedSource: NewsSource?
     
     private let apiKey = Secrets.newsAPIKey
+    
+    var filteredSources: [NewsSource] {
+        guard !selectedTopics.isEmpty else { return [] }
+        return availableSources.filter { source in
+            selectedTopics.contains { topic in
+                source.category == topic.category
+            }
+        }
+    }
     
     func fetchSources() {
         isLoading = true

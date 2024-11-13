@@ -80,7 +80,6 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
             }
         }
         
-        digestParts.append("---END---")
         digestParts.append("That's all for now. Thank you for listening.")
         
         return digestParts.joined(separator: "\n\n")
