@@ -6,28 +6,75 @@ struct PlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var audioService: AudioService
     @State private var hasStartedPlaying = false
+    @State private var showingVoiceError = false
     @State private var selectedArticleIndex: Int? = nil
     
     // MARK: - Body
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 32) {
-                    nowPlayingSection
-                    articlesSection
-                    Spacer()
-                    playerControls
+                if audioService.isGenerating {
+                    generatingContent
+                } else {
+                    mainContent
                 }
-                .padding()
             }
             .navigationTitle("News Digest")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { navigationButtons }
-            .onAppear(perform: handleOnAppear)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Done") {
+                        audioService.pauseDigest()
+                        dismiss()
+                    }
+                }
+            }
+            .alert("Playback Issue", isPresented: $showingVoiceError) {
+                Button("OK") { }
+            } message: {
+                Text("There was an issue with the text-to-speech system. Try closing and reopening the app, or test on a physical device.")
+            }
+            .onChange(of: audioService.debugMessage) { newValue in
+                if newValue.contains("Unable to list voice folder") {
+                    showingVoiceError = true
+                }
+            }
         }
     }
     
     // MARK: - Views
+    private var generatingContent: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            ProgressView()
+                .scaleEffect(1.5)
+            
+            Text("Creating your personalized news digest...")
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            Text("This may take a moment")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+        }
+        .padding()
+        .frame(maxHeight: .infinity)
+    }
+    
+    private var mainContent: some View {
+        VStack(spacing: 32) {
+            nowPlayingSection
+            articlesSection
+            Spacer()
+            playerControls
+        }
+        .padding()
+    }
+    
     private var nowPlayingSection: some View {
         VStack(spacing: 16) {
             Image(systemName: "waveform")

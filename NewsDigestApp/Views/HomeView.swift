@@ -105,9 +105,15 @@ struct HomeView: View {
     }
     
     private var listenButton: some View {
-        Button(action: handleListenButtonTap) {
+        Button(action: { handleListenButtonTap() }) {
             HStack {
-                Text("Listen Now")
+                if audioService.isGenerating {
+                    ProgressView()
+                        .tint(.white)
+                        .padding(.trailing, 4)
+                }
+                
+                Text(audioService.isGenerating ? "Generating..." : "Listen Now")
                     .fontWeight(.semibold)
                 Image(systemName: "headphones")
             }
@@ -118,8 +124,10 @@ struct HomeView: View {
             .cornerRadius(28)
             .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
         }
+        .disabled(audioService.isGenerating)
         .padding(.horizontal)
     }
+
     
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
@@ -153,7 +161,9 @@ struct HomeView: View {
     private func handleListenButtonTap() {
         audioService.setArticles(newsService.articles)
         if !showingPlayer {
-            audioService.startNewPlayback()
+            Task {
+                await audioService.generateAndPlayDigest()
+            }
         }
         showingPlayer = true
     }

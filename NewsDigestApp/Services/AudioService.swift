@@ -7,13 +7,15 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published var progress: Double = 0
     @Published var debugMessage: String = ""
     @Published var currentArticleIndex: Int = 0
+    @Published var isGenerating = false
     
     // MARK: - Private Properties
     private let synthesizer = AVSpeechSynthesizer()
     private var _articles: [Article] = []
     private var timer: Timer?
     private var currentUtterance: AVSpeechUtterance?
-    private var articleBoundaries: [String] = []
+    private let openAIService = OpenAIService()
+    private var generatedNarration: String?
     
     // MARK: - Public Properties
     
@@ -46,29 +48,29 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     // MARK: - Public Methods
     func setArticles(_ articles: [Article]) {
         self._articles = Array(articles.prefix(3))
+        // Reset the generated narration when new articles are set
+        self.generatedNarration = nil
         debugMessage = "Articles updated: \(self._articles.count) articles"
     }
     
     func startNewPlayback() {
         stopPlayback()
         currentArticleIndex = 0
-        playDigest()
+        
+        guard let narration = generatedNarration else {
+            debugMessage += "\nNo narration available"
+            return
+        }
+        
+        playText(narration)
     }
     
     func playDigest() {
-        guard !_articles.isEmpty else {
-            debugMessage = "No articles available"
-            return
+        if let narration = generatedNarration {
+            playText(narration)
+        } else {
+            debugMessage += "\nNo narration available"
         }
-        
-        if isPlaying {
-            debugMessage = "Playback already in progress"
-            return
-        }
-        
-        let digestText = createDigestText()
-        debugMessage = "Prepared digest text, length: \(digestText.count) characters"
-        playText(digestText)
     }
     
     func pauseDigest() {
@@ -98,62 +100,90 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         currentArticleIndex = 0
     }
     
-    // MARK: - Private Methods
-    private func createDigestText() -> String {
-        var digestParts: [String] = []
-        articleBoundaries = []
-        
-        // Introduction
-        digestParts.append("Welcome to your news digest. Here are today's top stories from \(_articles.first?.source.name ?? "your selected sources").")
-        
-        // Articles
-        for (index, article) in _articles.enumerated() {
-            // Add article boundary marker
-            let boundary = "---ARTICLE\(index)---"
-            digestParts.append(boundary)
-            articleBoundaries.append(boundary)
-            
-            // Article content
-            digestParts.append("Article \(index + 1):")
-            digestParts.append(article.title)
-            
-            if let description = article.description, !description.isEmpty {
-                digestParts.append("Here's more detail:")
-                digestParts.append(description)
-            }
-            
-            // Add pause between articles
-            digestParts.append("...")
+    func generateAndPlayDigest() async {
+        guard !_articles.isEmpty else {
+            debugMessage = "No articles available"
+            return
         }
         
-        // Conclusion
-        digestParts.append("---END---")
-        digestParts.append("That's all for now. Thank you for listening.")
+        isGenerating = true
+        debugMessage = "Starting OpenAI narration generation..."
         
-        return digestParts.joined(separator: "\n\n")
+        do {
+            debugMessage += "\nSending request to OpenAI..."
+            let narration = try await openAIService.generateNarration(for: _articles)
+            debugMessage += "\nReceived narration from OpenAI (length: \(narration.count) characters)"
+            
+            self.generatedNarration = narration
+            debugMessage += "\nNarration set successfully"
+            
+            startNewPlayback()
+        } catch let error as OpenAIError {
+            debugMessage += "\nOpenAI Error: \(error.errorDescription ?? "Unknown error")"
+            switch error {
+            case .apiError(let message):
+                debugMessage += "\nAPI Error Details: \(message)"
+            case .networkError(let underlyingError):
+                debugMessage += "\nNetwork Error Details: \(underlyingError.localizedDescription)"
+            default:
+                debugMessage += "\nOther OpenAI Error: \(error.localizedDescription)"
+            }
+        } catch {
+            debugMessage += "\nUnexpected error: \(error.localizedDescription)"
+        }
+        
+        isGenerating = false
     }
-    
     private func playText(_ text: String) {
-        debugMessage += "\nCreating utterance..."
+        debugMessage = "Creating utterance..."
         let utterance = AVSpeechUtterance(string: text)
         
         // Configure voice properties
-        utterance.rate = 0.52  // Slightly slower for better comprehension
-        utterance.pitchMultiplier = 1.1  // Slightly higher pitch for engagement
+        utterance.rate = 0.52
+        utterance.pitchMultiplier = 1.1
         utterance.volume = 1.0
         
-        // Use premium voice if available
-        if let voice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.premium.en-US.samantha") {
-            utterance.voice = voice
-        } else {
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        }
+        // Better voice selection logic
+        let voice = selectBestAvailableVoice()
+        utterance.voice = voice
+        debugMessage += "\nSelected voice: \(voice.name)"
         
         currentUtterance = utterance
         debugMessage += "\nAttempting to speak..."
         synthesizer.speak(utterance)
         isPlaying = true
         startProgressTimer()
+    }
+    
+    private func selectBestAvailableVoice() -> AVSpeechSynthesisVoice {
+        debugMessage += "\nSearching for available voices..."
+        
+        // Try premium voice first
+        if let premiumVoice = AVSpeechSynthesisVoice(identifier: "com.apple.voice.premium.en-US.samantha") {
+            debugMessage += "\nFound premium voice"
+            return premiumVoice
+        }
+        
+        // Try enhanced quality voice
+        if let enhancedVoice = AVSpeechSynthesisVoice(language: "en-US")?.voice(with: .enhanced) {
+            debugMessage += "\nFound enhanced voice"
+            return enhancedVoice
+        }
+        
+        // List all available voices for debugging
+        let availableVoices = AVSpeechSynthesisVoice.speechVoices()
+        debugMessage += "\nAvailable voices: \(availableVoices.map { $0.name }.joined(separator: ", "))"
+        
+        // Try to find any English voice
+        let englishVoices = availableVoices.filter { $0.language.starts(with: "en") }
+        if let bestEnglishVoice = englishVoices.first {
+            debugMessage += "\nUsing English voice: \(bestEnglishVoice.name)"
+            return bestEnglishVoice
+        }
+        
+        // Fallback to default voice
+        debugMessage += "\nFalling back to default voice"
+        return AVSpeechSynthesisVoice(language: "en-US") ?? AVSpeechSynthesisVoice()
     }
     
     private func startProgressTimer() {
@@ -174,17 +204,6 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
         let text = utterance.speechString as NSString
         let currentText = text.substring(with: characterRange)
-        
-        // Check if we've hit an article boundary
-        for (index, boundary) in articleBoundaries.enumerated() {
-            if currentText.contains(boundary) {
-                DispatchQueue.main.async {
-                    self.currentArticleIndex = index
-                    self.debugMessage += "\nNow playing article \(index + 1)"
-                }
-                break
-            }
-        }
     }
     
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
@@ -209,5 +228,22 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         debugMessage += "\nCanceled speaking"
         isPlaying = false
+    }
+}
+
+
+extension AVSpeechSynthesisVoice {
+    enum Quality {
+        case enhanced
+        case standard
+    }
+    
+    func voice(with quality: Quality) -> AVSpeechSynthesisVoice? {
+        switch quality {
+        case .enhanced:
+            return AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.siri_female_en-US_compact")
+        case .standard:
+            return self
+        }
     }
 }
