@@ -80,6 +80,41 @@ struct SourceCard: View {
     }
 }
 
+struct DurationCard: View {
+    let duration: DigestDuration
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: duration.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? .white : .blue)
+                
+                Text("\(duration.minutes) min")
+                    .font(.headline)
+                    .foregroundColor(isSelected ? .white : .primary)
+                
+                Text("\(duration.articleRange.lowerBound)-\(duration.articleRange.upperBound) articles")
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 100)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.blue : Color(.systemBackground))
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.1), lineWidth: 1)
+            )
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        }
+    }
+}
+
 struct HeadlineCard: View {
     let article: Article
     

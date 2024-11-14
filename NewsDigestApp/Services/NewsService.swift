@@ -7,6 +7,7 @@ class NewsService: ObservableObject {
     @Published var error: Error?
     @Published var selectedTopics: Set<Topic> = []
     @Published var selectedSources: Set<NewsSource> = []
+    @Published var selectedDuration: DigestDuration? = nil
     
     private let apiKey = Secrets.newsAPIKey
     
@@ -82,7 +83,7 @@ class NewsService: ObservableObject {
         }.resume()
     }
     
-    private func fetchNewsForSelectedSources() {
+    func fetchNewsForSelectedSources() {
         guard !selectedSources.isEmpty else {
             articles = []
             return
@@ -93,7 +94,8 @@ class NewsService: ObservableObject {
         
         // Create a source string with all selected source IDs
         let sourceIds = selectedSources.map { $0.id }.joined(separator: ",")
-        let urlString = "https://newsapi.org/v2/top-headlines?sources=\(sourceIds)&apiKey=\(apiKey)"
+        let pageSize = selectedDuration?.articleRange.upperBound ?? 5
+        let urlString = "https://newsapi.org/v2/top-headlines?sources=\(sourceIds)&pageSize=\(pageSize)&apiKey=\(apiKey)"
         
         guard let url = URL(string: urlString) else {
             isLoading = false

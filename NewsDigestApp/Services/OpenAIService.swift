@@ -4,7 +4,7 @@ class OpenAIService {
     private let apiKey = Secrets.openaiAPIKey
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     
-    func generateNarration(for articles: [Article]) async throws -> String {
+    func generateNarration(for articles: [Article], duration: DigestDuration?) async throws -> String {
         print("🚀 Starting narration generation")
         
         guard !apiKey.isEmpty && apiKey != "YOUR-OPENAI-API-KEY" else {
@@ -12,7 +12,7 @@ class OpenAIService {
             throw OpenAIError.apiError("API Key not configured")
         }
         
-        let prompt = createPrompt(for: articles)
+        let prompt = createPrompt(for: articles, duration: duration)
         print("📝 Generated prompt:\n\(prompt)")
         
         guard let url = URL(string: endpoint) else {
@@ -33,7 +33,8 @@ class OpenAIService {
                     "content": """
                     You are a skilled podcast host creating an engaging news digest.
                     Create a natural, conversational narrative connecting these stories.
-                    Keep the total length suitable for a 5-minute digest.
+                    Keep the total length suitable for the specified duration.
+                    Use clear transitions and maintain an engaging pace.
                     """
                 ],
                 [
@@ -87,22 +88,52 @@ class OpenAIService {
             throw OpenAIError.networkError(error)
         }
     }
-    private func createPrompt(for articles: [Article]) -> String {
-        var prompt = """
-        Create a podcast-style news digest for these articles.
-        Use clear transitions between stories.
-        
-        """
-        
-        for (index, article) in articles.enumerated() {
-            prompt += "Article \(index + 1):\n"
-            prompt += "Title: \(article.title)\n"
-            if let description = article.description {
-                prompt += "Description: \(description)\n"
+    
+    private func createPrompt(for articles: [Article], duration: DigestDuration?) -> String {
+        if let duration = duration {
+            var prompt = """
+            Create a podcast-style news digest for these articles that will take approximately \(duration.minutes) minutes to read aloud.
+            Aim for \(duration.timePerArticle.lowerBound)-\(duration.timePerArticle.upperBound) seconds per article.
+            Use clear transitions between stories and maintain an engaging, conversational tone.
+            
+            Key requirements:
+            - Total duration: \(duration.minutes) minutes
+            - Articles: \(articles.count)
+            - Pacing: Natural, broadcast-style delivery
+            - Include brief intro and outro
+            
+            """
+            
+            for (index, article) in articles.enumerated() {
+                prompt += "Article \(index + 1):\n"
+                prompt += "Title: \(article.title)\n"
+                if let description = article.description {
+                    prompt += "Description: \(description)\n"
+                }
+                prompt += "\n"
             }
-            prompt += "\n"
+            
+            return prompt
+        } else {
+            // Default prompt for when no duration is specified
+            var prompt = """
+            Create a podcast-style news digest for these articles.
+            Use clear transitions between stories and maintain an engaging pace.
+            Keep the total length suitable for a 5-minute digest.
+            Include a brief intro and outro.
+            
+            """
+            
+            for (index, article) in articles.enumerated() {
+                prompt += "Article \(index + 1):\n"
+                prompt += "Title: \(article.title)\n"
+                if let description = article.description {
+                    prompt += "Description: \(description)\n"
+                }
+                prompt += "\n"
+            }
+            
+            return prompt
         }
-        
-        return prompt
     }
 }

@@ -46,8 +46,14 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
     
     // MARK: - Public Methods
-    func setArticles(_ articles: [Article]) {
-        self._articles = Array(articles.prefix(3))
+    func setArticles(_ articles: [Article], duration: DigestDuration?) {
+        if let duration = duration {
+            // Take the upper bound of articles for the selected duration
+            self._articles = Array(articles.prefix(duration.articleRange.upperBound))
+        } else {
+            // Default to 5 articles if no duration is selected
+            self._articles = Array(articles.prefix(5))
+        }
         // Reset the generated narration when new articles are set
         self.generatedNarration = nil
         debugMessage = "Articles updated: \(self._articles.count) articles"
@@ -100,7 +106,7 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         currentArticleIndex = 0
     }
     
-    func generateAndPlayDigest() async {
+    func generateAndPlayDigest(duration: DigestDuration?) async {
         guard !_articles.isEmpty else {
             debugMessage = "No articles available"
             return
@@ -111,7 +117,7 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         
         do {
             debugMessage += "\nSending request to OpenAI..."
-            let narration = try await openAIService.generateNarration(for: _articles)
+            let narration = try await openAIService.generateNarration(for: _articles, duration: duration)
             debugMessage += "\nReceived narration from OpenAI (length: \(narration.count) characters)"
             
             self.generatedNarration = narration
@@ -134,6 +140,7 @@ class AudioService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         
         isGenerating = false
     }
+    
     private func playText(_ text: String) {
         debugMessage = "Creating utterance..."
         let utterance = AVSpeechUtterance(string: text)
