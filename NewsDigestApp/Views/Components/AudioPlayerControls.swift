@@ -11,9 +11,9 @@ struct AudioPlayerControls: View {
             
             // Time labels
             HStack {
-                Text(formatTime(audioService.progress * 300)) // 5 minutes = 300 seconds
+                Text(formatTime(currentTime))
                 Spacer()
-                Text("5:00")
+                Text(formatTime(totalTime))
             }
             .font(.caption)
             .foregroundColor(.secondary)
@@ -28,13 +28,23 @@ struct AudioPlayerControls: View {
         .padding()
     }
     
+    private var currentTime: Double {
+        // Get the selected duration in minutes or default to 5
+        let durationInMinutes = Double(audioService.selectedDuration?.minutes ?? 5)
+        return audioService.progress * (durationInMinutes * 60)
+    }
+    
+    private var totalTime: Double {
+        Double(audioService.selectedDuration?.minutes ?? 5) * 60
+    }
+    
     private func handlePlayPause() {
         if audioService.isPlaying {
             audioService.pauseDigest()
         } else if audioService.progress > 0 {
             audioService.resumeDigest()
         } else {
-            audioService.playDigest()
+            audioService.startNewPlayback()
         }
     }
     
