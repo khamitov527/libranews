@@ -18,6 +18,12 @@ struct HomeView: View {
         GridItem(.flexible())
     ]
     
+    private let timeRangeColumns = [
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
+    
     // MARK: - Body
     var body: some View {
         NavigationView {
@@ -29,12 +35,16 @@ struct HomeView: View {
                         sourcesSection
                     }
                     if !newsService.selectedSources.isEmpty {
-                        durationSection
+                        timeRangeSection
+                        if !newsService.selectedSources.isEmpty {
+                            durationSection
+                        }
                     }
                     if !newsService.articles.isEmpty {
                         headlinesSection
                     }
-                    if !newsService.selectedSources.isEmpty && newsService.selectedDuration != nil {
+                    if !newsService.selectedSources.isEmpty &&
+                       newsService.selectedDuration != nil {
                         listenButton
                     }
                 }
@@ -123,6 +133,24 @@ struct HomeView: View {
         .padding(.horizontal)
     }
     
+    private var timeRangeSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader("Select Time Period")
+            
+            LazyVGrid(columns: timeRangeColumns, spacing: 12) {
+                ForEach(TimeRange.available, id: \.id) { timeRange in
+                    TimeRangeCard(
+                        timeRange: timeRange,
+                        isSelected: newsService.selectedTimeRange.days == timeRange.days
+                    ) {
+                        handleTimeRangeSelection(timeRange)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+    
     private var durationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Select Duration")
@@ -204,6 +232,15 @@ struct HomeView: View {
 
     private func handleSourceSelection(_ source: NewsSource) {
         newsService.toggleSourceSelection(source)
+    }
+    
+    private func handleTimeRangeSelection(_ timeRange: TimeRange) {
+        withAnimation {
+            newsService.selectedTimeRange = timeRange
+            if !newsService.selectedSources.isEmpty {
+                newsService.fetchNewsForSelectedSources()
+            }
+        }
     }
     
     private func handleDurationSelection(_ duration: DigestDuration) {

@@ -80,6 +80,38 @@ struct SourceCard: View {
     }
 }
 
+struct TimeRangeCard: View {
+    let timeRange: TimeRange
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: timeRange.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? .white : .blue)
+                
+                Text(timeRange.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSelected ? .white : .primary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 80)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.blue : Color(.systemBackground))
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.1), lineWidth: 1)
+            )
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        }
+    }
+}
+
 struct DurationCard: View {
     let duration: DigestDuration
     let isSelected: Bool

@@ -8,6 +8,7 @@ class NewsService: ObservableObject {
     @Published var selectedTopics: Set<Topic> = []
     @Published var selectedSources: Set<NewsSource> = []
     @Published var selectedDuration: DigestDuration? = nil
+    @Published var selectedTimeRange: TimeRange = TimeRange.available[0]
     
     private let apiKey = Secrets.newsAPIKey
     
@@ -92,10 +93,24 @@ class NewsService: ObservableObject {
         isLoading = true
         error = nil
         
-        // Create a source string with all selected source IDs
         let sourceIds = selectedSources.map { $0.id }.joined(separator: ",")
         let pageSize = selectedDuration?.articleRange.upperBound ?? 5
-        let urlString = "https://newsapi.org/v2/top-headlines?sources=\(sourceIds)&pageSize=\(pageSize)&apiKey=\(apiKey)"
+        
+        // Calculate the from date based on selected time range
+        let fromDate: Date
+        if selectedTimeRange.days > 0 {
+            fromDate = Calendar.current.date(byAdding: .day, value: -selectedTimeRange.days, to: Date()) ?? Date()
+        } else {
+            // For "Latest News", use last 24 hours
+            fromDate = Calendar.current.date(byAdding: .hour, value: -24, to: Date()) ?? Date()
+        }
+        
+        // Format the date for the API
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let fromDateString = dateFormatter.string(from: fromDate)
+        
+        let urlString = "https://newsapi.org/v2/top-headlines?sources=\(sourceIds)&pageSize=\(pageSize)&from=\(fromDateString)&apiKey=\(apiKey)"
         
         guard let url = URL(string: urlString) else {
             isLoading = false
