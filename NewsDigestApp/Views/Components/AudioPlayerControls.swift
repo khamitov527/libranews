@@ -48,8 +48,10 @@ struct AudioPlayerControls: View {
     }
     
     private func formatTime(_ seconds: Double) -> String {
-        let minutes = Int(seconds) / 60
-        let remainingSeconds = Int(seconds) % 60
+        guard !seconds.isNaN && !seconds.isInfinite && seconds >= 0 else {
+            return "0:00"
+        }
+        let minutes = Int(max(0, seconds)) / 60
+        let remainingSeconds = Int(max(0, seconds)) % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
-    }
-}
+    }}

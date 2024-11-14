@@ -1,6 +1,11 @@
 import Foundation
 import AVFoundation
 
+// Protocol for voice services
+protocol VoiceService {
+    func synthesizeSpeech(text: String) async throws -> Data
+}
+
 enum ElevenLabsError: LocalizedError {
     case invalidURL
     case invalidResponse
@@ -24,7 +29,8 @@ enum ElevenLabsError: LocalizedError {
     }
 }
 
-actor ElevenLabsService {
+// ElevenLabs implementation
+actor ElevenLabsService: VoiceService {
     private let apiKey: String
     private let voiceId = "D38z5RcWu1voky8WS1ja" // Chris voice ID
     private let baseURL = "https://api.elevenlabs.io/v1"
@@ -71,5 +77,67 @@ actor ElevenLabsService {
         }
         
         return data
+    }
+}
+
+// iOS Voice implementation
+actor IOSVoiceService: VoiceService {
+    private let synthesizer = AVSpeechSynthesizer()
+    
+    func synthesizeSpeech(text: String) async throws -> Data {
+        // Create an utterance
+        let utterance = AVSpeechUtterance(string: text)
+        
+        // Configure voice and settings
+        utterance.rate = 0.5
+        utterance.pitchMultiplier = 1.0
+        utterance.volume = 1.0
+        
+        // Use a good quality voice
+        if let voice = AVSpeechSynthesisVoice(language: "en-US") {
+            utterance.voice = voice
+        }
+        
+        // Create a pipe to capture audio data
+        let pipe = Pipe()
+        let audioEngine = AVAudioEngine()
+        let mixer = audioEngine.mainMixerNode
+        
+        // Convert speech to audio data
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback)
+                try AVAudioSession.sharedInstance().setActive(true)
+                
+                // Create and configure audio format
+                let format = mixer.outputFormat(forBus: 0)
+                let settings: [String: Any] = [
+                    AVFormatIDKey: kAudioFormatLinearPCM,
+                    AVSampleRateKey: format.sampleRate,
+                    AVNumberOfChannelsKey: 1,
+                    AVLinearPCMBitDepthKey: 16,
+                    AVLinearPCMIsFloatKey: false
+                ]
+                
+                // Create audio file
+                let audioFile = try AVAudioFile(
+                    forWriting: FileManager.default.temporaryDirectory.appendingPathComponent("speech.wav"),
+                    settings: settings
+                )
+                
+                // Start audio engine
+                try audioEngine.start()
+                
+                // Speak the text
+                synthesizer.speak(utterance)
+                
+                // Convert to audio data
+                let audioData = try Data(contentsOf: audioFile.url)
+                continuation.resume(returning: audioData)
+                
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
     }
 }

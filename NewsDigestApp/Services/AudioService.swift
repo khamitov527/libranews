@@ -2,19 +2,30 @@ import AVFoundation
 
 @MainActor
 class AudioService: NSObject, ObservableObject {
+    
+    enum VoiceServiceType {
+        case elevenlabs
+        case ios
+    }
+    
     // MARK: - Published Properties
     @Published var isPlaying = false
     @Published var progress: Double = 0
     @Published var debugMessage: String = ""
     @Published var currentArticleIndex: Int = 0
     @Published var isGenerating = false
+    @Published var voiceServiceType: VoiceServiceType = .ios {
+        didSet {
+            setupVoiceService()
+        }
+    }
     
     // MARK: - Private Properties
     private var audioPlayer: AVAudioPlayer?
     private var _articles: [Article] = []
     private var timer: Timer?
     private let openAIService = OpenAIService()
-    private let elevenLabsService = ElevenLabsService()
+    private var voiceService: VoiceService!
     private var generatedNarration: String?
     private var audioData: Data?
     
@@ -39,6 +50,20 @@ class AudioService: NSObject, ObservableObject {
     }
     
     // MARK: - Public Methods
+    override init() {
+        super.init()
+        setupVoiceService()
+    }
+    
+    private func setupVoiceService() {
+        switch voiceServiceType {
+        case .elevenlabs:
+            voiceService = ElevenLabsService()
+        case .ios:
+            voiceService = IOSVoiceService()
+        }
+    }
+    
     func setArticles(_ articles: [Article]) {
         self._articles = Array(articles.prefix(3))
         self.generatedNarration = nil
@@ -60,9 +85,9 @@ class AudioService: NSObject, ObservableObject {
             let narration = try await openAIService.generateNarration(for: _articles)
             debugMessage += "\nReceived narration from OpenAI"
             
-            debugMessage += "\nSending request to ElevenLabs..."
-            let audioData = try await elevenLabsService.synthesizeSpeech(text: narration)
-            debugMessage += "\nReceived audio from ElevenLabs"
+            debugMessage += "\nGenerating speech..."
+            let audioData = try await voiceService.synthesizeSpeech(text: narration)
+            debugMessage += "\nReceived audio data"
             
             self.audioData = audioData
             self.generatedNarration = narration
