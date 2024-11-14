@@ -92,45 +92,43 @@ class OpenAIService {
     private func createPrompt(for articles: [Article], duration: DigestDuration?) -> String {
         if let duration = duration {
             var prompt = """
-            Create a podcast-style news digest for these articles that will take approximately \(duration.minutes) minutes to read aloud.
-            Aim for \(duration.timePerArticle.lowerBound)-\(duration.timePerArticle.upperBound) seconds per article.
-            Use clear transitions between stories and maintain an engaging, conversational tone.
-            
-            Key requirements:
-            - Total duration: \(duration.minutes) minutes
-            - Articles: \(articles.count)
-            - Pacing: Natural, broadcast-style delivery
-            - Include brief intro and outro
-            
+            Generate a podcast-style news digest based on the following article titles and summaries. Use your knowledge to expand each summary by adding relevant context, recent developments, or background information that would make the summary feel timely and comprehensive, as if sourced from current information.
+
+            Key details:
+            - Duration: \(duration.minutes) minutes
+            - Each story should take \(duration.timePerArticle.lowerBound)-\(duration.timePerArticle.upperBound) seconds to narrate.
+            - Use smooth transitions between stories with a friendly, conversational tone.
+            - Include a brief intro to set the scene (e.g., "Good morning! Here’s what you need to know today”) and a short outro.
+
+            Here are the articles:
             """
             
             for (index, article) in articles.enumerated() {
-                prompt += "Article \(index + 1):\n"
+                prompt += "\n\nArticle \(index + 1):\n"
                 prompt += "Title: \(article.title)\n"
                 if let description = article.description {
-                    prompt += "Description: \(description)\n"
+                    prompt += "Summary: \(description)\n"
                 }
-                prompt += "\n"
+                prompt += "Expand on this by adding relevant background, context, or information that would help the listener feel informed, as though it includes recent insights from current sources."
             }
             
+            prompt += "\n\nPlease provide summaries that feel up-to-date and engaging, using general knowledge to fill in details where specific information may be lacking."
+
             return prompt
         } else {
-            // Default prompt for when no duration is specified
+            // Default prompt when no duration is specified
             var prompt = """
-            Create a podcast-style news digest for these articles.
-            Use clear transitions between stories and maintain an engaging pace.
-            Keep the total length suitable for a 5-minute digest.
-            Include a brief intro and outro.
-            
+            Generate a podcast-style news digest based on the following article titles and summaries. Enrich each summary with relevant background and context for a fuller, more engaging experience, as though it were informed by recent, relevant sources.
+
             """
-            
+
             for (index, article) in articles.enumerated() {
-                prompt += "Article \(index + 1):\n"
+                prompt += "\n\nArticle \(index + 1):\n"
                 prompt += "Title: \(article.title)\n"
                 if let description = article.description {
-                    prompt += "Description: \(description)\n"
+                    prompt += "Summary: \(description)\n"
                 }
-                prompt += "\n"
+                prompt += "Expand on this by adding relevant background, context, or additional information to make it feel comprehensive and current."
             }
             
             return prompt
