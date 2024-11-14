@@ -25,7 +25,7 @@ struct HomeView: View {
                     if !newsService.articles.isEmpty {
                         headlinesSection
                     }
-                    if newsService.selectedSource != nil {
+                    if !newsService.selectedSources.isEmpty {
                         listenButton
                     }
                 }
@@ -75,16 +75,16 @@ struct HomeView: View {
     
     private var sourcesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Select News Source")
+            sectionHeader("Select News Sources")
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(newsService.filteredSources) { source in
                         SourceCard(
                             source: source,
-                            isSelected: source == newsService.selectedSource
+                            isSelected: newsService.selectedSources.contains(source)
                         ) {
-                            handleSourceSelection(source)
+                            newsService.toggleSourceSelection(source)
                         }
                     }
                 }
@@ -149,13 +149,13 @@ struct HomeView: View {
             } else {
                 newsService.selectedTopics.insert(topic)
             }
-            newsService.selectedSource = nil
+            newsService.selectedSources.removeAll() 
         }
     }
+
     
     private func handleSourceSelection(_ source: NewsSource) {
-        newsService.selectedSource = source
-        newsService.fetchNews(sourceId: source.id)
+        newsService.toggleSourceSelection(source)
     }
     
     private func handleListenButtonTap() {

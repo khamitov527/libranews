@@ -6,7 +6,7 @@ class NewsService: ObservableObject {
     @Published var isLoading = false
     @Published var error: Error?
     @Published var selectedTopics: Set<Topic> = []
-    @Published var selectedSource: NewsSource?
+    @Published var selectedSources: Set<NewsSource> = []
     
     private let apiKey = Secrets.newsAPIKey
     
@@ -21,6 +21,15 @@ class NewsService: ObservableObject {
                 source.category == topic.category
             }
         }
+    }
+    
+    func toggleSourceSelection(_ source: NewsSource) {
+        if selectedSources.contains(source) {
+            selectedSources.remove(source)
+        } else {
+            selectedSources.insert(source)
+        }
+        fetchNewsForSelectedSources()
     }
     
     func fetchSources() {
@@ -59,11 +68,18 @@ class NewsService: ObservableObject {
         }.resume()
     }
     
-    func fetchNews(sourceId: String) {
+    private func fetchNewsForSelectedSources() {
+        guard !selectedSources.isEmpty else {
+            articles = []
+            return
+        }
+        
         isLoading = true
         error = nil
         
-        let urlString = "https://newsapi.org/v2/top-headlines?sources=\(sourceId)&apiKey=\(apiKey)"
+        // Create a source string with all selected source IDs
+        let sourceIds = selectedSources.map { $0.id }.joined(separator: ",")
+        let urlString = "https://newsapi.org/v2/top-headlines?sources=\(sourceIds)&apiKey=\(apiKey)"
         
         guard let url = URL(string: urlString) else {
             isLoading = false
