@@ -12,12 +12,6 @@ struct HomeView: View {
         GridItem(.flexible(), spacing: 12)
     ]
     
-    private let durationColumns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
-    
     private let timeRangeColumns = [
         GridItem(.flexible()),
         GridItem(.flexible()),
@@ -36,15 +30,11 @@ struct HomeView: View {
                     }
                     if !newsService.selectedSources.isEmpty {
                         timeRangeSection
-                        if !newsService.selectedSources.isEmpty {
-                            durationSection
-                        }
                     }
                     if !newsService.articles.isEmpty {
                         headlinesSection
                     }
-                    if !newsService.selectedSources.isEmpty &&
-                       newsService.selectedDuration != nil {
+                    if !newsService.selectedSources.isEmpty {
                         listenButton
                     }
                 }
@@ -151,24 +141,6 @@ struct HomeView: View {
         .padding(.horizontal)
     }
     
-    private var durationSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Select Duration")
-            
-            LazyVGrid(columns: durationColumns, spacing: 12) {
-                ForEach(DigestDuration.available, id: \.id) { duration in
-                    DurationCard(
-                        duration: duration,
-                        isSelected: newsService.selectedDuration?.minutes == duration.minutes
-                    ) {
-                        handleDurationSelection(duration)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal)
-    }
-    
     private var headlinesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Latest Headlines")
@@ -226,7 +198,6 @@ struct HomeView: View {
                 newsService.selectedTopics.insert(topic)
             }
             newsService.selectedSources.removeAll()
-            newsService.selectedDuration = nil
         }
     }
 
@@ -243,25 +214,11 @@ struct HomeView: View {
         }
     }
     
-    private func handleDurationSelection(_ duration: DigestDuration) {
-        withAnimation {
-            if newsService.selectedDuration?.minutes == duration.minutes {
-                newsService.selectedDuration = nil
-            } else {
-                newsService.selectedDuration = duration
-            }
-            // Refresh articles to match new duration
-            if !newsService.selectedSources.isEmpty {
-                newsService.fetchNewsForSelectedSources()
-            }
-        }
-    }
-    
     private func handleListenButtonTap() {
-        audioService.setArticles(newsService.articles, duration: newsService.selectedDuration)
+        audioService.setArticles(newsService.articles)
         if !showingPlayer {
             Task {
-                await audioService.generateAndPlayDigest(duration: newsService.selectedDuration)
+                await audioService.generateAndPlayDigest()
             }
         }
         showingPlayer = true

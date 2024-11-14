@@ -7,7 +7,6 @@ class NewsService: ObservableObject {
     @Published var error: Error?
     @Published var selectedTopics: Set<Topic> = []
     @Published var selectedSources: Set<NewsSource> = []
-    @Published var selectedDuration: DigestDuration? = nil
     @Published var selectedTimeRange: TimeRange = TimeRange.available[0]
     
     private let apiKey = Secrets.newsAPIKey
@@ -94,7 +93,7 @@ class NewsService: ObservableObject {
         error = nil
         
         let sourceIds = selectedSources.map { $0.id }.joined(separator: ",")
-        let pageSize = selectedDuration?.articleRange.upperBound ?? 5
+        let pageSize = 3
         
         // Calculate the from date based on selected time range
         let fromDate: Date

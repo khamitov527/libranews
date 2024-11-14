@@ -8,7 +8,6 @@ class AudioService: NSObject, ObservableObject {
     @Published var debugMessage: String = ""
     @Published var currentArticleIndex: Int = 0
     @Published var isGenerating = false
-    @Published var selectedDuration: DigestDuration?
     
     // MARK: - Private Properties
     private var audioPlayer: AVAudioPlayer?
@@ -40,19 +39,14 @@ class AudioService: NSObject, ObservableObject {
     }
     
     // MARK: - Public Methods
-    func setArticles(_ articles: [Article], duration: DigestDuration?) {
-        self.selectedDuration = duration
-        if let duration = duration {
-            self._articles = Array(articles.prefix(duration.articleRange.upperBound))
-        } else {
-            self._articles = Array(articles.prefix(5))
-        }
+    func setArticles(_ articles: [Article]) {
+        self._articles = Array(articles.prefix(3))
         self.generatedNarration = nil
         self.audioData = nil
         debugMessage = "Articles updated: \(self._articles.count) articles"
     }
     
-    func generateAndPlayDigest(duration: DigestDuration?) async {
+    func generateAndPlayDigest() async {
         guard !_articles.isEmpty else {
             debugMessage = "No articles available"
             return
@@ -62,12 +56,10 @@ class AudioService: NSObject, ObservableObject {
         debugMessage = "Starting OpenAI narration generation..."
         
         do {
-            // Generate text narration
             debugMessage += "\nSending request to OpenAI..."
-            let narration = try await openAIService.generateNarration(for: _articles, duration: duration)
+            let narration = try await openAIService.generateNarration(for: _articles)
             debugMessage += "\nReceived narration from OpenAI"
             
-            // Convert text to speech using ElevenLabs
             debugMessage += "\nSending request to ElevenLabs..."
             let audioData = try await elevenLabsService.synthesizeSpeech(text: narration)
             debugMessage += "\nReceived audio from ElevenLabs"
@@ -76,12 +68,8 @@ class AudioService: NSObject, ObservableObject {
             self.generatedNarration = narration
             
             startNewPlayback()
-        } catch let error as OpenAIError {
-            handleError(error)
-        } catch let error as ElevenLabsError {
-            handleError(error)
         } catch {
-            debugMessage += "\nUnexpected error: \(error.localizedDescription)"
+            handleError(error)
         }
         
         isGenerating = false

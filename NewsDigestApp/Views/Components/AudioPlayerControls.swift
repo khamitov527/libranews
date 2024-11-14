@@ -29,13 +29,12 @@ struct AudioPlayerControls: View {
     }
     
     private var currentTime: Double {
-        // Get the selected duration in minutes or default to 5
-        let durationInMinutes = Double(audioService.selectedDuration?.minutes ?? 5)
+        let durationInMinutes = 2.0
         return audioService.progress * (durationInMinutes * 60)
     }
-    
+
     private var totalTime: Double {
-        Double(audioService.selectedDuration?.minutes ?? 5) * 60
+        Double(2) * 60
     }
     
     private func handlePlayPause() {

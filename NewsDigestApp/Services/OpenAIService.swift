@@ -4,7 +4,7 @@ class OpenAIService {
     private let apiKey = Secrets.openaiAPIKey
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     
-    func generateNarration(for articles: [Article], duration: DigestDuration?) async throws -> String {
+    func generateNarration(for articles: [Article]) async throws -> String {
         print("🚀 Starting narration generation")
         
         guard !apiKey.isEmpty && apiKey != "YOUR-OPENAI-API-KEY" else {
@@ -12,7 +12,7 @@ class OpenAIService {
             throw OpenAIError.apiError("API Key not configured")
         }
         
-        let prompt = createPrompt(for: articles, duration: duration)
+        let prompt = createPrompt(for: articles)
         print("📝 Generated prompt:\n\(prompt)")
         
         guard let url = URL(string: endpoint) else {
@@ -89,49 +89,30 @@ class OpenAIService {
         }
     }
     
-    private func createPrompt(for articles: [Article], duration: DigestDuration?) -> String {
-        if let duration = duration {
-            var prompt = """
-            Generate a podcast-style news digest based on the following article titles and summaries. Use your knowledge to expand each summary by adding relevant context, recent developments, or background information that would make the summary feel timely and comprehensive, as if sourced from current information.
+    private func createPrompt(for articles: [Article]) -> String {
+        var prompt = """
+        Generate a podcast-style news digest based on the following article titles and summaries. Use your knowledge to expand each summary by adding relevant context, recent developments, or background information that would make the summary feel timely and comprehensive, as if sourced from current information.
 
-            Key details:
-            - Duration: \(duration.minutes) minutes
-            - Each story should take \(duration.timePerArticle.lowerBound)-\(duration.timePerArticle.upperBound) seconds to narrate.
-            - Use smooth transitions between stories with a friendly, conversational tone.
-            - Include a brief intro to set the scene (e.g., "Good morning! Here’s what you need to know today”) and a short outro.
+        Key details:
+        - Duration: 2 minutes
+        - Each story should take 30-50 seconds to narrate based on its content value.
+        - Use smooth transitions between stories with a friendly, conversational tone.
+        - Include a brief intro to set the scene (e.g., "Good morning! Here’s what you need to know today”) and a short outro.
 
-            Here are the articles:
-            """
-            
-            for (index, article) in articles.enumerated() {
-                prompt += "\n\nArticle \(index + 1):\n"
-                prompt += "Title: \(article.title)\n"
-                if let description = article.description {
-                    prompt += "Summary: \(description)\n"
-                }
-                prompt += "Expand on this by adding relevant background, context, or information that would help the listener feel informed, as though it includes recent insights from current sources."
+        Here are the articles:
+        """
+        
+        for (index, article) in articles.enumerated() {
+            prompt += "\n\nArticle \(index + 1):\n"
+            prompt += "Title: \(article.title)\n"
+            if let description = article.description {
+                prompt += "Summary: \(description)\n"
             }
-            
-            prompt += "\n\nPlease provide summaries that feel up-to-date and engaging, using general knowledge to fill in details where specific information may be lacking."
-
-            return prompt
-        } else {
-            // Default prompt when no duration is specified
-            var prompt = """
-            Generate a podcast-style news digest based on the following article titles and summaries. Enrich each summary with relevant background and context for a fuller, more engaging experience, as though it were informed by recent, relevant sources.
-
-            """
-
-            for (index, article) in articles.enumerated() {
-                prompt += "\n\nArticle \(index + 1):\n"
-                prompt += "Title: \(article.title)\n"
-                if let description = article.description {
-                    prompt += "Summary: \(description)\n"
-                }
-                prompt += "Expand on this by adding relevant background, context, or additional information to make it feel comprehensive and current."
-            }
-            
-            return prompt
+            prompt += "Expand on this by adding relevant background, context, or information that would help the listener feel informed, as though it includes recent insights from current sources."
         }
+        
+        prompt += "\n\nPlease provide summaries that feel up-to-date and engaging, using general knowledge to fill in details where specific information may be lacking."
+
+        return prompt
     }
 }
