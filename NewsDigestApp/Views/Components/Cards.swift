@@ -75,6 +75,7 @@ struct SourceCard: View {
                     .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
             )
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
     }
 }

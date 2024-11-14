@@ -75,7 +75,27 @@ struct HomeView: View {
     
     private var sourcesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Select News Sources")
+            HStack {
+                sectionHeader("Select News Sources")
+                Spacer()
+                
+                // All Sources Toggle
+                Button(action: {
+                    if newsService.hasAllSourcesSelected {
+                        newsService.clearSelectedSources()
+                    } else {
+                        newsService.selectAllSourcesForCurrentTopics()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Text(newsService.hasAllSourcesSelected ? "Clear All" : "Select All")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Image(systemName: newsService.hasAllSourcesSelected ? "xmark.circle.fill" : "checkmark.circle.fill")
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -91,6 +111,7 @@ struct HomeView: View {
                 .padding(.horizontal)
             }
         }
+        .padding(.horizontal)
     }
     
     private var headlinesSection: some View {

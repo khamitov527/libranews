@@ -10,6 +10,20 @@ class NewsService: ObservableObject {
     
     private let apiKey = Secrets.newsAPIKey
     
+    func selectAllSourcesForCurrentTopics() {
+        selectedSources = Set(filteredSources)
+        fetchNewsForSelectedSources()
+    }
+    
+    func clearSelectedSources() {
+        selectedSources.removeAll()
+        articles.removeAll()
+    }
+    
+    var hasAllSourcesSelected: Bool {
+        !filteredSources.isEmpty && Set(filteredSources) == selectedSources
+    }
+    
     func clearArticles() {
         articles = []
     }
