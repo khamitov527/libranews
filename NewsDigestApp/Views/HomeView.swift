@@ -31,9 +31,6 @@ struct HomeView: View {
                     if !newsService.selectedSources.isEmpty {
                         timeRangeSection
                     }
-                    if !newsService.articles.isEmpty {
-                        headlinesSection
-                    }
                     if !newsService.selectedSources.isEmpty {
                         listenButton
                     }
@@ -136,17 +133,6 @@ struct HomeView: View {
                         handleTimeRangeSelection(timeRange)
                     }
                 }
-            }
-        }
-        .padding(.horizontal)
-    }
-    
-    private var headlinesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Latest Headlines")
-            
-            ForEach(newsService.articles.prefix(3)) { article in
-                HeadlineCard(article: article)
             }
         }
         .padding(.horizontal)
