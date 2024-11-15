@@ -17,13 +17,9 @@ struct MainView: View {
 }
 
 struct ProfileView: View {
+    
     var body: some View {
-        NavigationView {
-            ScrollView {
-                Text("Profile View")
-                    .padding()
-            }
-            .navigationTitle("Profile")
+        VStack {
         }
     }
 }

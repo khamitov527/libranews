@@ -1,22 +1,26 @@
 import SwiftUI
 
 struct PlayerView: View {
-    // MARK: - Properties
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var audioService: AudioService
     @State private var hasStartedPlaying = false
     @State private var showingVoiceError = false
     
-    // MARK: - Body
     var body: some View {
         NavigationView {
             VStack {
-                if audioService.isGenerating {
-                    generatingContent
-                } else {
-                    mainContent
+                Spacer()
+                // Single play/pause button
+                Button(action: handlePlayPause) {
+                    Image(systemName: audioService.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(audioService.isGenerating ? .gray : .blue)
                 }
+                .disabled(audioService.isGenerating)
+                .padding()
+                Spacer()
             }
+            .background(Color(.systemBackground))
             .navigationTitle("Audio Player")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -37,44 +41,32 @@ struct PlayerView: View {
                     showingVoiceError = true
                 }
             }
+            .onAppear {
+                if !hasStartedPlaying {
+                    Task {
+                        await audioService.generateAndPlayDigest()
+                    }
+                    hasStartedPlaying = true
+                }
+            }
         }
     }
     
-    // MARK: - Views
-    private var generatingContent: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            ProgressView()
-                .scaleEffect(1.5)
-            
-            Text("Preparing audio...")
-                .font(.headline)
-                .foregroundColor(.secondary)
-            
-            Text("This may take a moment")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            Spacer()
-        }
-        .padding()
-    }
-    
-    private var mainContent: some View {
-        VStack {
-            Spacer()
-            AudioPlayerControls(audioService: audioService)
-            Spacer()
-        }
-        .padding()
-    }
-    
-    // MARK: - Methods
-    private func handleOnAppear() {
-        if !hasStartedPlaying {
-            audioService.startNewPlayback()
-            hasStartedPlaying = true
+    private func handlePlayPause() {
+        if audioService.isPlaying {
+            audioService.pauseDigest()
+        } else {
+            if audioService.audioPlayer != nil {
+                if audioService.progress > 0 {
+                    audioService.resumeDigest()
+                } else {
+                    audioService.startNewPlayback()
+                }
+            } else {
+                Task {
+                    await audioService.generateAndPlayDigest()
+                }
+            }
         }
     }
 }

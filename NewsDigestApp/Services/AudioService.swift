@@ -21,7 +21,7 @@ class AudioService: NSObject, ObservableObject {
     }
     
     // MARK: - Private Properties
-    private var audioPlayer: AVAudioPlayer?
+    var audioPlayer: AVAudioPlayer?
     private var _articles: [Article] = []
     private var timer: Timer?
     private let openAIService = OpenAIService()
