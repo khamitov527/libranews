@@ -10,13 +10,32 @@ struct PlayerView: View {
         NavigationView {
             VStack {
                 Spacer()
-                // Single play/pause button
-                Button(action: handlePlayPause) {
-                    Image(systemName: audioService.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundColor(audioService.isGenerating ? .gray : .blue)
+                // Playback controls
+                HStack(spacing: 40) {
+                    // Rewind button
+                    Button(action: handleRewind) {
+                        Image(systemName: "gobackward.10")
+                            .font(.system(size: 32))
+                            .foregroundColor(audioService.isGenerating ? .gray : .primary)
+                    }
+                    .disabled(audioService.isGenerating)
+                    
+                    // Play/Pause button
+                    Button(action: handlePlayPause) {
+                        Image(systemName: audioService.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 64))
+                            .foregroundColor(audioService.isGenerating ? .gray : .blue)
+                    }
+                    .disabled(audioService.isGenerating)
+                    
+                    // Forward button
+                    Button(action: handleForward) {
+                        Image(systemName: "goforward.10")
+                            .font(.system(size: 32))
+                            .foregroundColor(audioService.isGenerating ? .gray : .primary)
+                    }
+                    .disabled(audioService.isGenerating)
                 }
-                .disabled(audioService.isGenerating)
                 .padding()
                 Spacer()
             }
@@ -68,5 +87,19 @@ struct PlayerView: View {
                 }
             }
         }
+    }
+    
+    private func handleRewind() {
+        guard let player = audioService.audioPlayer else { return }
+        let newTime = max(0, player.currentTime - 10)
+        player.currentTime = newTime
+        audioService.progress = newTime / player.duration
+    }
+    
+    private func handleForward() {
+        guard let player = audioService.audioPlayer else { return }
+        let newTime = min(player.duration, player.currentTime + 10)
+        player.currentTime = newTime
+        audioService.progress = newTime / player.duration
     }
 }
