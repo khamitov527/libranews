@@ -9,97 +9,65 @@ struct ArticleAudioSegment {
 
 @MainActor
 class AudioService: NSObject, ObservableObject {
-    
+    // MARK: - Configuration
     enum VoiceServiceType {
-        case elevenlabs
-        case ios
-        case openai
+        case elevenlabs, ios, openai
     }
     
-    // MARK: - Published Properties
+    // MARK: - Published States
     @Published var isPlaying = false
     @Published var progress: Double = 0
-    @Published var debugMessage: String = ""
-    @Published var currentArticleIndex: Int = 0
     @Published var isGenerating = false
     @Published var voiceServiceType: VoiceServiceType = .ios {
-        didSet {
-            setupVoiceService()
-        }
+        didSet { setupVoiceService() }
     }
     @Published private(set) var audioQueue: [ArticleAudioSegment] = []
-    @Published private(set) var isProcessingQueue = false
-    private var currentSegmentIndex: Int = 0
     
     // MARK: - Private Properties
     var audioPlayer: AVAudioPlayer?
     private var _articles: [Article] = []
     private var timer: Timer?
+    private var currentSegmentIndex: Int = 0
     private let openAIService = OpenAIService()
     private var voiceService: VoiceService!
-    private var generatedNarration: String?
-    private var audioData: Data?
     
-    private func setupVoiceService() {
-        switch voiceServiceType {
-        case .elevenlabs:
-            voiceService = ElevenLabsService()
-        case .ios:
-            voiceService = IOSVoiceService()
-        case .openai:
-            voiceService = OpenAITTSService()
-        }
-        debugMessage += "\nVoice service switched to \(voiceServiceType)"
-    }
-    
-    // MARK: - Public Properties
-    var displayArticleIndex: Int {
-        currentArticleIndex + 1
-    }
-    
-    var totalArticles: Int {
-        _articles.count
-    }
-    
-    var articles: [Article] {
-        _articles
-    }
-    
-    var currentArticleTitle: String {
-        guard !_articles.isEmpty && currentArticleIndex < _articles.count else {
-            return "No article playing"
-        }
-        return _articles[currentArticleIndex].title
-    }
-    
-    // MARK: - Public Methods
+    // MARK: - Initialization
     override init() {
         super.init()
         setupVoiceService()
     }
     
-    func processArticlesSequentially() async {
-        isGenerating = true
-        isProcessingQueue = true
-        
-        // Process articles one by one
-        for (index, article) in _articles.enumerated() {
-            if index == 0 {
-                // Process and play first article
-                await processAndPlayArticle(article)
-            } else {
-                // Process remaining articles in background
-                await processArticle(article)
-            }
-        }
-        
-        isProcessingQueue = false
-        isGenerating = false
+    // MARK: - Main Workflow
+    
+    /// Step 1: Set articles and start playback
+    func setArticles(_ articles: [Article]) {
+        _articles = Array(articles.prefix(3))
+        audioQueue.removeAll()
+        currentSegmentIndex = 0
+        print("📚 Articles set: \(_articles.count) articles")
     }
     
+    /// Step 2: Initial playback trigger
+    func startPlayback() async {
+        guard !_articles.isEmpty else {
+            print("⚠️ No articles available")
+            return
+        }
+        
+        audioQueue.removeAll()
+        currentSegmentIndex = 0
+        isGenerating = true
+        
+        // Process and play first article
+        if let firstArticle = _articles.first {
+            await processAndPlayArticle(firstArticle)
+        }
+    }
+    
+    /// Step 3: Process article and begin playback
     private func processAndPlayArticle(_ article: Article) async {
         do {
-            debugMessage += "\nProcessing first article: \(article.title)"
+            print("🎙 Processing article: \(article.title)")
             let narration = try await openAIService.generateNarration(for: article)
             let audioData = try await voiceService.synthesizeSpeech(text: narration)
             
@@ -111,14 +79,48 @@ class AudioService: NSObject, ObservableObject {
             )
             
             audioQueue.append(segment)
+            startPlayingCurrentSegment()
+            isGenerating = false
             
-            if audioQueue.count == 1 {
-                startPlayingCurrentSegment()
-            }
+            // Trigger loading of next article
+            loadNextArticle()
         } catch {
-            handleError(error)
+            print("❌ Error: \(error.localizedDescription)")
+            isGenerating = false
         }
     }
+    
+    /// Step 4: Queue next article for processing
+    private func loadNextArticle() {
+        let nextIndex = currentSegmentIndex + 1
+        if nextIndex < _articles.count {
+            Task {
+                await processAndQueueArticle(_articles[nextIndex])
+            }
+        }
+    }
+    
+    /// Step 5: Process and queue next article
+    private func processAndQueueArticle(_ article: Article) async {
+        do {
+            print("📦 Preparing next article: \(article.title)")
+            let narration = try await openAIService.generateNarration(for: article)
+            let audioData = try await voiceService.synthesizeSpeech(text: narration)
+            
+            let player = try AVAudioPlayer(data: audioData)
+            let segment = ArticleAudioSegment(
+                article: article,
+                audioData: audioData,
+                duration: player.duration
+            )
+            
+            audioQueue.append(segment)
+        } catch {
+            print("❌ Error preparing next article: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Playback Controls
     
     private func startPlayingCurrentSegment() {
         guard currentSegmentIndex < audioQueue.count else {
@@ -126,61 +128,14 @@ class AudioService: NSObject, ObservableObject {
             return
         }
         
-        let segment = audioQueue[currentSegmentIndex]
-        
         do {
-            audioPlayer = try AVAudioPlayer(data: segment.audioData)
+            audioPlayer = try AVAudioPlayer(data: audioQueue[currentSegmentIndex].audioData)
             audioPlayer?.delegate = self
             audioPlayer?.play()
             isPlaying = true
             startProgressTimer()
         } catch {
-            handleError(error)
-        }
-    }
-    
-    private func processArticle(_ article: Article) async {
-        do {
-            debugMessage += "\nProcessing next article: \(article.title)"
-            let narration = try await openAIService.generateNarration(for: article)
-            let audioData = try await voiceService.synthesizeSpeech(text: narration)
-            
-            let player = try AVAudioPlayer(data: audioData)
-            let segment = ArticleAudioSegment(
-                article: article,
-                audioData: audioData,
-                duration: player.duration
-            )
-            
-            audioQueue.append(segment)
-        } catch {
-            handleError(error)
-        }
-    }
-    
-    func setArticles(_ articles: [Article]) {
-        self._articles = Array(articles.prefix(3))
-        self.audioQueue.removeAll()
-        self.currentSegmentIndex = 0
-        debugMessage = "Articles updated: \(self._articles.count) articles"
-    }
-    
-    func startPlayback() async {
-        guard !_articles.isEmpty else {
-            debugMessage = "No articles available"
-            return
-        }
-        
-        // Clear existing queue and reset index
-        audioQueue.removeAll()
-        currentSegmentIndex = 0
-        
-        await processArticlesSequentially()
-    }
-    
-    func startNewPlayback() {
-        Task {
-            await startPlayback()
+            print("❌ Playback error: \(error.localizedDescription)")
         }
     }
     
@@ -196,41 +151,22 @@ class AudioService: NSObject, ObservableObject {
         startProgressTimer()
     }
     
-    func stopPlayback() {
-        debugMessage += "\nStopping playback..."
-        audioPlayer?.stop()
-        audioPlayer = nil
-        isPlaying = false
-        progress = 0
-        timer?.invalidate()
-        currentSegmentIndex = 0
-        audioQueue.removeAll()
+    // MARK: - Utilities
+    
+    private func setupVoiceService() {
+        voiceService = switch voiceServiceType {
+            case .elevenlabs: ElevenLabsService()
+            case .ios: IOSVoiceService()
+            case .openai: OpenAITTSService()
+        }
+        print("🎵 Voice service switched to \(voiceServiceType)")
     }
     
     private func startProgressTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self,
-                  let player = self.audioPlayer else { return }
-            
+            guard let self = self, let player = self.audioPlayer else { return }
             self.progress = player.currentTime / player.duration
-            
-            if self.progress >= 1.0 {
-                self.timer?.invalidate()
-                self.isPlaying = false
-                self.progress = 0
-            }
-        }
-    }
-
-    private func handleError(_ error: Error) {
-        debugMessage += "\nError: \(error.localizedDescription)"
-        if let openAIError = error as? OpenAIError {
-            debugMessage += "\nOpenAI Error: \(openAIError.errorDescription ?? "Unknown error")"
-        } else if let elevenLabsError = error as? ElevenLabsError {
-            debugMessage += "\nElevenLabs Error: \(elevenLabsError.errorDescription ?? "Unknown error")"
-        } else if let openAITTSError = error as? OpenAITTSError {
-            debugMessage += "\nOpenAI TTS Error: \(openAITTSError.errorDescription ?? "Unknown error")"
         }
     }
 }
@@ -243,6 +179,7 @@ extension AudioService: AVAudioPlayerDelegate {
             currentSegmentIndex += 1
             if currentSegmentIndex < audioQueue.count {
                 startPlayingCurrentSegment()
+                loadNextArticle()
             } else {
                 isPlaying = false
                 progress = 1.0
