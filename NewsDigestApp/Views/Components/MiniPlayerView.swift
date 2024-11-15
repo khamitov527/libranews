@@ -11,7 +11,7 @@ struct MiniPlayerView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "waveform")
                         .font(.title3)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.appBlue)
                     
                     Text("News Digest")
                         .font(.subheadline)
@@ -25,7 +25,7 @@ struct MiniPlayerView: View {
                 Button(action: handlePlayPause) {
                     Image(systemName: audioService.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title3)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.appBlue)
                 }
                 .disabled(audioService.isGenerating)
             }

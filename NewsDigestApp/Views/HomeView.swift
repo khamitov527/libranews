@@ -53,7 +53,7 @@ struct HomeView: View {
             Text("News Digest")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-                .foregroundColor(.blue)
+                .foregroundColor(.appBlue)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal)
@@ -97,7 +97,7 @@ struct HomeView: View {
                             .fontWeight(.medium)
                         Image(systemName: newsService.hasAllSourcesSelected ? "xmark.circle.fill" : "checkmark.circle.fill")
                     }
-                    .foregroundColor(.blue)
+                    .foregroundColor(.appBlue)
                 }
             }
             
@@ -151,10 +151,10 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(Color.blue)
+            .background(Color.appBlue)
             .foregroundColor(.white)
             .cornerRadius(28)
-            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+            .shadow(color: .appBlue.opacity(0.3), radius: 8, x: 0, y: 4)
         }
         .disabled(audioService.isGenerating)
         .padding(.horizontal)

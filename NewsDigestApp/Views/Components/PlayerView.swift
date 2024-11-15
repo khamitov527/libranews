@@ -24,7 +24,7 @@ struct PlayerView: View {
                     Button(action: handlePlayPause) {
                         Image(systemName: audioService.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 64))
-                            .foregroundColor(audioService.isGenerating ? .gray : .blue)
+                            .foregroundColor(audioService.isGenerating ? .gray : .appBlue)
                     }
                     .disabled(audioService.isGenerating)
                     

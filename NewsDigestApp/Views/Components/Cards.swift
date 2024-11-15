@@ -10,7 +10,7 @@ struct TopicCard: View {
             VStack(spacing: 8) { // Reduced spacing
                 Image(systemName: topic.icon)
                     .font(.system(size: 20)) // Slightly smaller icon
-                    .foregroundColor(isSelected ? .white : .blue)
+                    .foregroundColor(isSelected ? .white : .appBlue)
                 
                 Text(topic.name)
                     .font(.caption)
@@ -22,12 +22,12 @@ struct TopicCard: View {
             .frame(maxWidth: .infinity)
             .frame(height: 80) // Fixed height for consistency
             .padding(.vertical, 8) // Reduced padding
-            .background(isSelected ? Color.blue : Color(.systemBackground))
+            .background(isSelected ? Color.appBlue : Color(.systemBackground))
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.1), lineWidth: 1)
+                    .stroke(isSelected ? Color.appBlue : Color.gray.opacity(0.1), lineWidth: 1)
             )
         }
     }
@@ -44,7 +44,7 @@ struct SourceCard: View {
                 // Source Icon (first letter in a circle)
                 ZStack {
                     Circle()
-                        .fill(isSelected ? Color.blue : Color.secondary.opacity(0.1))
+                        .fill(isSelected ? Color.appBlue : Color.secondary.opacity(0.1))
                         .frame(width: 40, height: 40)
                     
                     Text(source.name.prefix(1))
@@ -72,7 +72,7 @@ struct SourceCard: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.appBlue : Color.clear, lineWidth: 2)
             )
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
@@ -90,7 +90,7 @@ struct TimeRangeCard: View {
             VStack(spacing: 8) {
                 Image(systemName: timeRange.icon)
                     .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .white : .blue)
+                    .foregroundColor(isSelected ? .white : .appBlue)
                 
                 Text(timeRange.title)
                     .font(.subheadline)
@@ -100,12 +100,12 @@ struct TimeRangeCard: View {
             .frame(maxWidth: .infinity)
             .frame(height: 80)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.blue : Color(.systemBackground))
+            .background(isSelected ? Color.appBlue : Color(.systemBackground))
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.1), lineWidth: 1)
+                    .stroke(isSelected ? Color.appBlue : Color.gray.opacity(0.1), lineWidth: 1)
             )
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
@@ -125,7 +125,7 @@ struct ArticleDebugCard: View {
                 HStack {
                     Text("Article \(index)")
                         .font(.headline)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.appBlue)
                     
                     Spacer()
                     
