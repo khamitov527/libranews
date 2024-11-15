@@ -11,7 +11,7 @@ class OpenAIService {
             print("❌ API Key not set")
             throw OpenAIError.apiError("API Key not configured")
         }
-        
+            
         let prompt = createPrompt(for: articles)
         print("📝 Generated prompt:\n\(prompt)")
         
