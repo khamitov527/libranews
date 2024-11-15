@@ -6,6 +6,7 @@ class AudioService: NSObject, ObservableObject {
     enum VoiceServiceType {
         case elevenlabs
         case ios
+        case openai
     }
     
     // MARK: - Published Properties
@@ -28,6 +29,18 @@ class AudioService: NSObject, ObservableObject {
     private var voiceService: VoiceService!
     private var generatedNarration: String?
     private var audioData: Data?
+    
+    private func setupVoiceService() {
+        switch voiceServiceType {
+        case .elevenlabs:
+            voiceService = ElevenLabsService()
+        case .ios:
+            voiceService = IOSVoiceService()
+        case .openai:
+            voiceService = OpenAITTSService()
+        }
+        debugMessage += "\nVoice service switched to \(voiceServiceType)"
+    }
     
     // MARK: - Public Properties
     var displayArticleIndex: Int {
@@ -53,15 +66,6 @@ class AudioService: NSObject, ObservableObject {
     override init() {
         super.init()
         setupVoiceService()
-    }
-    
-    private func setupVoiceService() {
-        switch voiceServiceType {
-        case .elevenlabs:
-            voiceService = ElevenLabsService()
-        case .ios:
-            voiceService = IOSVoiceService()
-        }
     }
     
     func setArticles(_ articles: [Article]) {
@@ -159,13 +163,15 @@ class AudioService: NSObject, ObservableObject {
             }
         }
     }
-    
+
     private func handleError(_ error: Error) {
         debugMessage += "\nError: \(error.localizedDescription)"
         if let openAIError = error as? OpenAIError {
             debugMessage += "\nOpenAI Error: \(openAIError.errorDescription ?? "Unknown error")"
         } else if let elevenLabsError = error as? ElevenLabsError {
             debugMessage += "\nElevenLabs Error: \(elevenLabsError.errorDescription ?? "Unknown error")"
+        } else if let openAITTSError = error as? OpenAITTSError {
+            debugMessage += "\nOpenAI TTS Error: \(openAITTSError.errorDescription ?? "Unknown error")"
         }
     }
 }

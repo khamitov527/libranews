@@ -201,7 +201,7 @@ struct HomeView: View {
     }
     
     private func handleListenButtonTap() {
-        audioService.voiceServiceType = .ios  // .ios or .elevenlabs
+        audioService.voiceServiceType = .openai  // .ios or .elevenlabs
         audioService.setArticles(newsService.articles)
         if !showingPlayer {
             Task {
