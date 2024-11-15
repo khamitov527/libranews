@@ -122,14 +122,8 @@ struct PlayerView: View {
     }
     
     // MARK: - Actions
-    
     private func handleOnAppear() {
-        if !hasStartedPlaying && audioService.audioQueue.isEmpty {
-            Task {
-                await audioService.startPlayback()
-            }
-            hasStartedPlaying = true
-        }
+        hasStartedPlaying = true
     }
     
     private func handlePlayPause() {
