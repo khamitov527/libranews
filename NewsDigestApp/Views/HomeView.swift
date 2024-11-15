@@ -199,13 +199,18 @@ struct HomeView: View {
     }
     
     private func handleListenButtonTap() {
-        audioService.voiceServiceType = .openai  // or whatever voice service you want
-        audioService.setArticles(newsService.articles)
-        // Instead of generateAndPlayDigest, use startPlayback
         Task {
+            // Reset everything first
+            audioService.reset()
+            
+            // Set new articles and voice type
+            audioService.voiceServiceType = .openai
+            audioService.setArticles(newsService.articles)
+            
+            // Show player first, then start playback
+            showingPlayer = true
             await audioService.startPlayback()
         }
-        showingPlayer = true
     }
 }
 

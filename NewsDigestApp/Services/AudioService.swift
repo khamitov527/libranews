@@ -41,9 +41,9 @@ class AudioService: NSObject, ObservableObject {
     
     /// Step 1: Set articles and start playback
     func setArticles(_ articles: [Article]) {
+        print("📚 Setting new articles")
+        reset() // Clear everything first
         _articles = Array(articles.prefix(3))
-        audioQueue.removeAll()
-        currentSegmentIndex = 0
         print("📚 Articles set: \(_articles.count) articles")
     }
     
@@ -122,6 +122,33 @@ class AudioService: NSObject, ObservableObject {
     
     // MARK: - Playback Controls
     
+    func pauseDigest() {
+        audioPlayer?.pause()
+        isPlaying = false
+        timer?.invalidate()
+    }
+    
+    func resumeDigest() {
+        audioPlayer?.play()
+        isPlaying = true
+        startProgressTimer()
+    }
+    
+    // MARK: - Utilities
+    
+    func reset() {
+        print("🔄 Resetting audio service")
+        audioPlayer?.stop()
+        audioPlayer = nil
+        audioQueue.removeAll()
+        currentSegmentIndex = 0
+        isPlaying = false
+        isGenerating = false
+        progress = 0
+        timer?.invalidate()
+        _articles.removeAll()
+    }
+    
     private func startPlayingCurrentSegment() {
         guard currentSegmentIndex < audioQueue.count else {
             isPlaying = false
@@ -138,20 +165,6 @@ class AudioService: NSObject, ObservableObject {
             print("❌ Playback error: \(error.localizedDescription)")
         }
     }
-    
-    func pauseDigest() {
-        audioPlayer?.pause()
-        isPlaying = false
-        timer?.invalidate()
-    }
-    
-    func resumeDigest() {
-        audioPlayer?.play()
-        isPlaying = true
-        startProgressTimer()
-    }
-    
-    // MARK: - Utilities
     
     private func setupVoiceService() {
         voiceService = switch voiceServiceType {

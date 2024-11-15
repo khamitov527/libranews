@@ -22,13 +22,8 @@ struct PlayerView: View {
                     articleInfoView(currentSegment)
                 }
                 
-                // Progress Bar
                 progressBar
-                
-                // Controls
                 controlsView
-                
-                // Queue Status
                 queueStatusView
                 
                 Spacer()
