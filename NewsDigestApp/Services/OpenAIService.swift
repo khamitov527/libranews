@@ -4,14 +4,24 @@ class OpenAIService {
     private let apiKey = Secrets.openaiAPIKey
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     
+    private let systemPrompt = """
+    You are a skilled podcast host creating engaging news digests. Your task is to:
+    - Create natural, conversational narratives
+    - Keep segments to 20 seconds when read at natural pace
+    - Focus on key points and newsworthy elements
+    - Add brief context when necessary
+    - Use natural transitions and appropriate pauses
+    - Maintain engaging but clear pacing
+    - Keep to the point and do not include unnecesary things
+    - Do not include any greetings, intro, outro, or anything unrelated to story
+    """
+    
     func generateNarration(for article: Article) async throws -> String {
         print("🚀 Starting narration generation for article: \(article.title)")
         
         guard !apiKey.isEmpty && apiKey != "YOUR-OPENAI-API-KEY" else {
             throw OpenAIError.apiError("API Key not configured")
         }
-            
-        let prompt = createPrompt(for: article)
         
         guard let url = URL(string: endpoint) else {
             throw OpenAIError.invalidURL
@@ -22,31 +32,23 @@ class OpenAIService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
+        let userPrompt = """
+        Create a 20-second news segment for this article:
+        
+        Title: \(article.title)
+        Summary: \(article.description ?? "")
+        """
+        
         let payload: [String: Any] = [
             "model": "gpt-3.5-turbo",
             "messages": [
-                [
-                    "role": "system",
-                    "content": """
-                    You are a skilled podcast host creating an engaging news digest.
-                    Create a natural, conversational narrative for this story.
-                    Keep the length suitable for 40-second narration.
-                    Maintain an engaging pace and natural tone.
-                    Focus on the most important aspects of the story.
-                    Add brief context when necessary.
-                    Use clear transitions and natural pauses.
-                    End with a concise conclusion.
-                    """
-                ],
-                [
-                    "role": "user",
-                    "content": prompt
-                ]
+                ["role": "system", "content": systemPrompt],
+                ["role": "user", "content": userPrompt]
             ],
             "temperature": 0.7,
             "max_tokens": 500,
-            "presence_penalty": 0.6,  // Encourage more varied content
-            "frequency_penalty": 0.3   // Reduce repetition
+            "presence_penalty": 0.6,
+            "frequency_penalty": 0.3
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
@@ -73,23 +75,5 @@ class OpenAIService {
         }
         
         return choice.message.content
-    }
-    
-    private func createPrompt(for article: Article) -> String {
-        """
-        Generate a podcast-style narration for this article. Make it engaging and informative,
-        suitable for a 40-second audio segment.
-
-        Title: \(article.title)
-        Summary: \(article.description ?? "")
-
-        Guidelines:
-        - Focus on the key points and most newsworthy elements
-        - Add brief but relevant context to help listeners understand the story
-        - Use natural, conversational language
-        - Include a smooth introduction and brief conclusion
-        - Keep the pace engaging but easy to follow
-        - Aim for about 40 seconds when read aloud at a natural pace
-        """
     }
 }

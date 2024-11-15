@@ -82,22 +82,24 @@ class AudioService: NSObject, ObservableObject {
         isGenerating = true
         isProcessingQueue = true
         
-        // Process first article immediately
-        if let firstArticle = _articles.first {
-            await processAndPlayArticle(firstArticle)
-        }
-        
-        // Process remaining articles in background
-        Task {
-            for article in _articles.dropFirst() {
+        // Process articles one by one
+        for (index, article) in _articles.enumerated() {
+            if index == 0 {
+                // Process and play first article
+                await processAndPlayArticle(article)
+            } else {
+                // Process remaining articles in background
                 await processArticle(article)
             }
-            isProcessingQueue = false
         }
+        
+        isProcessingQueue = false
+        isGenerating = false
     }
     
     private func processAndPlayArticle(_ article: Article) async {
         do {
+            debugMessage += "\nProcessing first article: \(article.title)"
             let narration = try await openAIService.generateNarration(for: article)
             let audioData = try await voiceService.synthesizeSpeech(text: narration)
             
@@ -111,7 +113,6 @@ class AudioService: NSObject, ObservableObject {
             audioQueue.append(segment)
             
             if audioQueue.count == 1 {
-                // First article, start playing immediately
                 startPlayingCurrentSegment()
             }
         } catch {
@@ -140,6 +141,7 @@ class AudioService: NSObject, ObservableObject {
     
     private func processArticle(_ article: Article) async {
         do {
+            debugMessage += "\nProcessing next article: \(article.title)"
             let narration = try await openAIService.generateNarration(for: article)
             let audioData = try await voiceService.synthesizeSpeech(text: narration)
             
