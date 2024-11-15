@@ -45,7 +45,7 @@ struct PlayerView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") {
-                        audioService.pauseDigest()
+                        // Don't stop playback on dismiss
                         dismiss()
                     }
                 }
@@ -61,7 +61,7 @@ struct PlayerView: View {
                 }
             }
             .onAppear {
-                if !hasStartedPlaying {
+                if !hasStartedPlaying && audioService.audioPlayer == nil {
                     Task {
                         await audioService.generateAndPlayDigest()
                     }

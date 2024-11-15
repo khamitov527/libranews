@@ -2,9 +2,9 @@ import SwiftUI
 
 struct HomeView: View {
     // MARK: - Properties
-    @StateObject private var audioService = AudioService()
+    @ObservedObject var audioService: AudioService
     @StateObject private var newsService = NewsService()
-    @State private var showingPlayer = false
+    @Binding var showingPlayer: Bool
     
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -39,9 +39,6 @@ struct HomeView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showingPlayer) {
-                PlayerView(audioService: audioService)
-            }
             .onAppear(perform: loadInitialData)
         }
     }
@@ -201,7 +198,7 @@ struct HomeView: View {
     }
     
     private func handleListenButtonTap() {
-        audioService.voiceServiceType = .openai  // .ios or .elevenlabs
+        audioService.voiceServiceType = .openai
         audioService.setArticles(newsService.articles)
         if !showingPlayer {
             Task {
