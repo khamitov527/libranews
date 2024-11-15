@@ -30,23 +30,19 @@ struct MiniPlayerView: View {
                 .disabled(audioService.isGenerating)
             }
             .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(Color(.systemBackground))
-            .overlay(
-                Rectangle()
-                    .frame(height: 0.5)
-                    .foregroundColor(Color(.systemGray4))
-                    .opacity(0.5),
-                alignment: .top
+            .padding(.vertical, 10)
+            .background(
+                Color(.systemBackground)
+                    .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: -2)
             )
         }
+        .buttonStyle(PlainButtonStyle())
     }
     
     private func handlePlayPause() {
         if audioService.isPlaying {
             audioService.pauseDigest()
         } else if let player = audioService.audioPlayer {
-            // Resume from last position
             audioService.resumeDigest()
         }
     }

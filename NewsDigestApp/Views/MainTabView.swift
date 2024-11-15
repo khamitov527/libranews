@@ -23,10 +23,16 @@ struct MainTabView: View {
                     .tag(1)
             }
             
-            // Mini player
-            if audioService.audioPlayer != nil {
-                MiniPlayerView(audioService: audioService, showingPlayer: $showingPlayer)
-                    .transition(.move(edge: .bottom))
+            // Mini player overlay at bottom
+            VStack(spacing: 0) {
+                if audioService.audioPlayer != nil {
+                    MiniPlayerView(audioService: audioService, showingPlayer: $showingPlayer)
+                        .transition(.move(edge: .bottom))
+                }
+                
+                // Invisible spacer matching tab bar height
+                Color.clear
+                    .frame(height: 49) // Standard tab bar height
             }
         }
         .sheet(isPresented: $showingPlayer) {

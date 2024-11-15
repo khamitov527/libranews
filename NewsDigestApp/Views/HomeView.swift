@@ -39,6 +39,7 @@ struct HomeView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
+            .miniPlayerPadding(audioService)
             .onAppear(perform: loadInitialData)
         }
     }
@@ -206,5 +207,19 @@ struct HomeView: View {
             }
         }
         showingPlayer = true
+    }
+}
+
+struct ContentPaddingModifier: ViewModifier {
+    let audioService: AudioService
+    
+    func body(content: Content) -> some View {
+        content.padding(.bottom, audioService.audioPlayer != nil ? 50 : 0)
+    }
+}
+
+extension View {
+    func miniPlayerPadding(_ audioService: AudioService) -> some View {
+        self.padding(.bottom, audioService.audioPlayer != nil ? 58 : 0) // Height of mini player
     }
 }
