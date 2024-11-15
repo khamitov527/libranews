@@ -1,5 +1,12 @@
 import AVFoundation
 
+struct ArticleAudioSegment {
+    let article: Article
+    let audioData: Data
+    let duration: TimeInterval
+    var isPlayed: Bool = false
+}
+
 @MainActor
 class AudioService: NSObject, ObservableObject {
     
@@ -20,6 +27,9 @@ class AudioService: NSObject, ObservableObject {
             setupVoiceService()
         }
     }
+    @Published private(set) var audioQueue: [ArticleAudioSegment] = []
+    @Published private(set) var isProcessingQueue = false
+    private var currentSegmentIndex: Int = 0
     
     // MARK: - Private Properties
     var audioPlayer: AVAudioPlayer?
@@ -68,71 +78,117 @@ class AudioService: NSObject, ObservableObject {
         setupVoiceService()
     }
     
-    func setArticles(_ articles: [Article]) {
-        self._articles = Array(articles.prefix(3))
-        self.generatedNarration = nil
-        self.audioData = nil
-        debugMessage = "Articles updated: \(self._articles.count) articles"
-    }
-    
-    func generateAndPlayDigest() async {
-        guard !_articles.isEmpty else {
-            debugMessage = "No articles available"
-            return
+    func processArticlesSequentially() async {
+        isGenerating = true
+        isProcessingQueue = true
+        
+        // Process first article immediately
+        if let firstArticle = _articles.first {
+            await processAndPlayArticle(firstArticle)
         }
         
-        isGenerating = true
-        debugMessage = "Starting OpenAI narration generation..."
-        
+        // Process remaining articles in background
+        Task {
+            for article in _articles.dropFirst() {
+                await processArticle(article)
+            }
+            isProcessingQueue = false
+        }
+    }
+    
+    private func processAndPlayArticle(_ article: Article) async {
         do {
-            debugMessage += "\nSending request to OpenAI..."
-            let narration = try await openAIService.generateNarration(for: _articles)
-            debugMessage += "\nReceived narration from OpenAI"
-            
-            debugMessage += "\nGenerating speech..."
+            let narration = try await openAIService.generateNarration(for: article)
             let audioData = try await voiceService.synthesizeSpeech(text: narration)
-            debugMessage += "\nReceived audio data"
             
-            self.audioData = audioData
-            self.generatedNarration = narration
+            let player = try AVAudioPlayer(data: audioData)
+            let segment = ArticleAudioSegment(
+                article: article,
+                audioData: audioData,
+                duration: player.duration
+            )
             
-            startNewPlayback()
+            audioQueue.append(segment)
+            
+            if audioQueue.count == 1 {
+                // First article, start playing immediately
+                startPlayingCurrentSegment()
+            }
         } catch {
             handleError(error)
         }
-        
-        isGenerating = false
     }
     
-    func startNewPlayback() {
-        stopPlayback()
-        currentArticleIndex = 0
-        
-        guard let audioData = audioData else {
-            debugMessage += "\nNo audio available"
+    private func startPlayingCurrentSegment() {
+        guard currentSegmentIndex < audioQueue.count else {
+            isPlaying = false
             return
         }
         
+        let segment = audioQueue[currentSegmentIndex]
+        
         do {
-            audioPlayer = try AVAudioPlayer(data: audioData)
+            audioPlayer = try AVAudioPlayer(data: segment.audioData)
             audioPlayer?.delegate = self
             audioPlayer?.play()
             isPlaying = true
             startProgressTimer()
         } catch {
-            debugMessage += "\nError playing audio: \(error.localizedDescription)"
+            handleError(error)
+        }
+    }
+    
+    private func processArticle(_ article: Article) async {
+        do {
+            let narration = try await openAIService.generateNarration(for: article)
+            let audioData = try await voiceService.synthesizeSpeech(text: narration)
+            
+            let player = try AVAudioPlayer(data: audioData)
+            let segment = ArticleAudioSegment(
+                article: article,
+                audioData: audioData,
+                duration: player.duration
+            )
+            
+            audioQueue.append(segment)
+        } catch {
+            handleError(error)
+        }
+    }
+    
+    func setArticles(_ articles: [Article]) {
+        self._articles = Array(articles.prefix(3))
+        self.audioQueue.removeAll()
+        self.currentSegmentIndex = 0
+        debugMessage = "Articles updated: \(self._articles.count) articles"
+    }
+    
+    func startPlayback() async {
+        guard !_articles.isEmpty else {
+            debugMessage = "No articles available"
+            return
+        }
+        
+        // Clear existing queue and reset index
+        audioQueue.removeAll()
+        currentSegmentIndex = 0
+        
+        await processArticlesSequentially()
+    }
+    
+    func startNewPlayback() {
+        Task {
+            await startPlayback()
         }
     }
     
     func pauseDigest() {
-        debugMessage += "\nPausing playback..."
         audioPlayer?.pause()
         isPlaying = false
         timer?.invalidate()
     }
     
     func resumeDigest() {
-        debugMessage += "\nResuming playback..."
         audioPlayer?.play()
         isPlaying = true
         startProgressTimer()
@@ -145,7 +201,8 @@ class AudioService: NSObject, ObservableObject {
         isPlaying = false
         progress = 0
         timer?.invalidate()
-        currentArticleIndex = 0
+        currentSegmentIndex = 0
+        audioQueue.removeAll()
     }
     
     private func startProgressTimer() {
@@ -179,9 +236,16 @@ class AudioService: NSObject, ObservableObject {
 // MARK: - AVAudioPlayerDelegate
 extension AudioService: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        debugMessage += "\nFinished playing"
-        isPlaying = false
-        progress = 1.0
-        timer?.invalidate()
+        if flag {
+            audioQueue[currentSegmentIndex].isPlayed = true
+            currentSegmentIndex += 1
+            if currentSegmentIndex < audioQueue.count {
+                startPlayingCurrentSegment()
+            } else {
+                isPlaying = false
+                progress = 1.0
+                timer?.invalidate()
+            }
+        }
     }
 }

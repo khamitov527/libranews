@@ -4,21 +4,16 @@ class OpenAIService {
     private let apiKey = Secrets.openaiAPIKey
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     
-    func generateNarration(for articles: [Article]) async throws -> String {
-        print("🚀 Starting narration generation")
+    func generateNarration(for article: Article) async throws -> String {
+        print("🚀 Starting narration generation for article: \(article.title)")
         
         guard !apiKey.isEmpty && apiKey != "YOUR-OPENAI-API-KEY" else {
-            print("❌ API Key not set")
             throw OpenAIError.apiError("API Key not configured")
         }
-        
-        return "You are a skilled podcast host creating an engaging news digest. Create a natural, conversational narrative connecting these stories."
             
-        let prompt = createPrompt(for: articles)
-        print("📝 Generated prompt:\n\(prompt)")
+        let prompt = createPrompt(for: article)
         
         guard let url = URL(string: endpoint) else {
-            print("❌ Invalid URL")
             throw OpenAIError.invalidURL
         }
         
@@ -34,9 +29,13 @@ class OpenAIService {
                     "role": "system",
                     "content": """
                     You are a skilled podcast host creating an engaging news digest.
-                    Create a natural, conversational narrative connecting these stories.
-                    Keep the total length suitable for the specified duration.
-                    Use clear transitions and maintain an engaging pace.
+                    Create a natural, conversational narrative for this story.
+                    Keep the length suitable for 40-second narration.
+                    Maintain an engaging pace and natural tone.
+                    Focus on the most important aspects of the story.
+                    Add brief context when necessary.
+                    Use clear transitions and natural pauses.
+                    End with a concise conclusion.
                     """
                 ],
                 [
@@ -45,76 +44,52 @@ class OpenAIService {
                 ]
             ],
             "temperature": 0.7,
-            "max_tokens": 1000
+            "max_tokens": 500,
+            "presence_penalty": 0.6,  // Encourage more varied content
+            "frequency_penalty": 0.3   // Reduce repetition
         ]
         
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: payload)
-            request.httpBody = jsonData
-            print("📤 Sending request to OpenAI")
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw OpenAIError.invalidResponse
-            }
-            
-            print("🔍 HTTP Status Code: \(httpResponse.statusCode)")
-            print("📥 Raw Response: \(String(data: data, encoding: .utf8) ?? "Unable to read response")")
-            
-            if httpResponse.statusCode != 200 {
-                let errorResponse = try? JSONDecoder().decode(OpenAIResponse.self, from: data)
-                if let errorMessage = errorResponse?.error?.message {
-                    throw OpenAIError.apiError(errorMessage)
-                } else {
-                    throw OpenAIError.apiError("Unknown error occurred")
-                }
-            }
-            
-            let openAIResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
-            guard let choice = openAIResponse.choices.first else {
-                throw OpenAIError.noChoicesReturned
-            }
-            
-            let content = choice.message.content
-            guard !content.isEmpty else {
-                throw OpenAIError.emptyContent
-            }
-            
-            print("✅ Successfully generated narration")
-            return content
-            
-        } catch let error as OpenAIError {
-            throw error
-        } catch {
-            throw OpenAIError.networkError(error)
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OpenAIError.invalidResponse
         }
+        
+        if httpResponse.statusCode != 200 {
+            if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let error = errorJson["error"] as? [String: Any],
+               let message = error["message"] as? String {
+                throw OpenAIError.apiError(message)
+            }
+            throw OpenAIError.apiError("Unknown error occurred")
+        }
+        
+        let openAIResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+        guard let choice = openAIResponse.choices.first,
+              !choice.message.content.isEmpty else {
+            throw OpenAIError.noChoicesReturned
+        }
+        
+        return choice.message.content
     }
     
-    private func createPrompt(for articles: [Article]) -> String {
-        var prompt = """
-        Generate a podcast-style news digest based on the following article titles and summaries. Use your knowledge to expand each summary by adding relevant context, recent developments, or background information that would make the summary feel timely and comprehensive, as if sourced from current information.
-
-        Key details:
-        - Duration: 2 minutes
-        - Each story should take 30-50 seconds to narrate based on its content value.
-        - Use smooth transitions between stories with a friendly, conversational tone.
-        - Include a brief intro to set the scene (e.g., "Good morning! Here’s what you need to know today”) and a short outro.
-
-        Here are the articles:
+    private func createPrompt(for article: Article) -> String {
         """
-        
-        for (index, article) in articles.enumerated() {
-            prompt += "\n\nArticle \(index + 1):\n"
-            prompt += "Title: \(article.title)\n"
-            if let description = article.description {
-                prompt += "Summary: \(description)\n"
-            }
-            prompt += "Expand on this by adding relevant background, context, or information that would help the listener feel informed, as though it includes recent insights from current sources."
-        }
-        
-        prompt += "\n\nPlease provide summaries that feel up-to-date and engaging, using general knowledge to fill in details where specific information may be lacking."
+        Generate a podcast-style narration for this article. Make it engaging and informative,
+        suitable for a 40-second audio segment.
 
-        return prompt
+        Title: \(article.title)
+        Summary: \(article.description ?? "")
+
+        Guidelines:
+        - Focus on the key points and most newsworthy elements
+        - Add brief but relevant context to help listeners understand the story
+        - Use natural, conversational language
+        - Include a smooth introduction and brief conclusion
+        - Keep the pace engaging but easy to follow
+        - Aim for about 40 seconds when read aloud at a natural pace
+        """
     }
 }

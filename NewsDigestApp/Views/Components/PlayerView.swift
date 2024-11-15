@@ -8,8 +8,44 @@ struct PlayerView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 20) {
+                // Progress indicator for loading state
+                if audioService.isGenerating {
+                    Text("Preparing your news digest...")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                }
+                
                 Spacer()
+                
+                // Article Info
+                if let currentSegment = audioService.audioQueue.first(where: { !$0.isPlayed }) {
+                    VStack(spacing: 8) {
+                        Text("Now Playing")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(currentSegment.article.title)
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                }
+                
+                // Progress Bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 4)
+                        
+                        Rectangle()
+                            .fill(Color.appBlue)
+                            .frame(width: geometry.size.width * audioService.progress, height: 4)
+                    }
+                }
+                .frame(height: 4)
+                .padding(.horizontal)
+                
                 // Playback controls
                 HStack(spacing: 40) {
                     // Rewind button
@@ -37,6 +73,12 @@ struct PlayerView: View {
                     .disabled(audioService.isGenerating)
                 }
                 .padding()
+                
+                // Queue info
+                Text("\(audioService.audioQueue.filter { $0.isPlayed }.count)/\(audioService.audioQueue.count) Articles")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
                 Spacer()
             }
             .background(Color(.systemBackground))
@@ -45,7 +87,6 @@ struct PlayerView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") {
-                        // Don't stop playback on dismiss
                         dismiss()
                     }
                 }
@@ -61,9 +102,9 @@ struct PlayerView: View {
                 }
             }
             .onAppear {
-                if !hasStartedPlaying && audioService.audioPlayer == nil {
+                if !hasStartedPlaying && audioService.audioQueue.isEmpty {
                     Task {
-                        await audioService.generateAndPlayDigest()
+                        await audioService.startPlayback()
                     }
                     hasStartedPlaying = true
                 }
@@ -76,14 +117,10 @@ struct PlayerView: View {
             audioService.pauseDigest()
         } else {
             if audioService.audioPlayer != nil {
-                if audioService.progress > 0 {
-                    audioService.resumeDigest()
-                } else {
-                    audioService.startNewPlayback()
-                }
+                audioService.resumeDigest()
             } else {
                 Task {
-                    await audioService.generateAndPlayDigest()
+                    await audioService.startPlayback()
                 }
             }
         }
