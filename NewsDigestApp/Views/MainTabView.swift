@@ -6,15 +6,11 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     
     init() {
-        // Make UITabBar translucent
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
-        appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
         
-        // Keep the same colors but with transparency
         appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.5)
         
-        // Apply to both standard and scrolled appearances
         UITabBar.appearance().standardAppearance = appearance
         if #available(iOS 15.0, *) {
             UITabBar.appearance().scrollEdgeAppearance = appearance
@@ -39,20 +35,17 @@ struct MainTabView: View {
                     .tag(1)
             }
             
-            // Mini player overlay at bottom
-            VStack(spacing: 0) {
-                if let _ = audioService.currentSegment {
+            // Mini player overlay
+            if let _ = audioService.currentSegment {
+                VStack(spacing: 0) {
                     MiniPlayerView(audioService: audioService, showingPlayer: $showingPlayer)
+                        .background(Color(.systemBackground))
                         .transition(.move(edge: .bottom))
-                        .background(
-                            Rectangle()
-                                .fill(.ultraThinMaterial)
-                                .edgesIgnoringSafeArea(.all)
-                        )
+                    
+                    // Added to ensure MiniPlayer appears above TabBar
+                    Spacer()
+                        .frame(height: 49) // TabBar height
                 }
-                
-                Color.clear
-                    .frame(height: 49)
             }
         }
         .sheet(isPresented: $showingPlayer) {

@@ -224,6 +224,6 @@ struct ContentPaddingModifier: ViewModifier {
 
 extension View {
     func miniPlayerPadding(_ audioService: AudioService) -> some View {
-        self.padding(.bottom, audioService.audioPlayer != nil ? 58 : 0) // Height of mini player
+        self.padding(.bottom, audioService.currentSegment != nil ? 58 : 0)
     }
 }
