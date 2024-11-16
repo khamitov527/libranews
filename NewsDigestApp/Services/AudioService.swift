@@ -22,6 +22,7 @@ class AudioService: NSObject, ObservableObject {
         didSet { setupVoiceService() }
     }
     @Published private(set) var audioQueue: [ArticleAudioSegment] = []
+    @Published private(set) var currentSegment: ArticleAudioSegment?
     
     // MARK: - Private Properties
     var audioPlayer: AVAudioPlayer?
@@ -147,15 +148,20 @@ class AudioService: NSObject, ObservableObject {
         progress = 0
         timer?.invalidate()
         _articles.removeAll()
+        currentSegment = nil
     }
     
     private func startPlayingCurrentSegment() {
         guard currentSegmentIndex < audioQueue.count else {
             isPlaying = false
+            // Update current segment when playback ends
+            currentSegment = audioQueue.last
             return
         }
         
         do {
+            // Update current segment when starting new playback
+            currentSegment = audioQueue[currentSegmentIndex]
             audioPlayer = try AVAudioPlayer(data: audioQueue[currentSegmentIndex].audioData)
             audioPlayer?.delegate = self
             audioPlayer?.play()

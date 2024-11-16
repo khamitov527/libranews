@@ -41,20 +41,18 @@ struct MainTabView: View {
             
             // Mini player overlay at bottom
             VStack(spacing: 0) {
-                if audioService.audioPlayer != nil {
+                if let _ = audioService.currentSegment {
                     MiniPlayerView(audioService: audioService, showingPlayer: $showingPlayer)
                         .transition(.move(edge: .bottom))
                         .background(
-                            // Add blur effect to mini player
                             Rectangle()
                                 .fill(.ultraThinMaterial)
                                 .edgesIgnoringSafeArea(.all)
                         )
                 }
                 
-                // Invisible spacer matching tab bar height
                 Color.clear
-                    .frame(height: 49) // Standard tab bar height
+                    .frame(height: 49)
             }
         }
         .sheet(isPresented: $showingPlayer) {

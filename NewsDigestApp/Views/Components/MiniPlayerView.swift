@@ -4,10 +4,6 @@ struct MiniPlayerView: View {
     @ObservedObject var audioService: AudioService
     @Binding var showingPlayer: Bool
     
-    private var currentSegment: ArticleAudioSegment? {
-        audioService.audioQueue.first(where: { !$0.isPlayed })
-    }
-    
     var body: some View {
         Button(action: { showingPlayer = true }) {
             HStack {
@@ -17,7 +13,7 @@ struct MiniPlayerView: View {
                         .font(.title3)
                         .foregroundColor(.appBlue)
                     
-                    if let segment = currentSegment {
+                    if let segment = audioService.currentSegment {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(segment.article.title)
                                 .font(.subheadline)
@@ -47,11 +43,6 @@ struct MiniPlayerView: View {
                                 }
                             }
                         }
-                    } else {
-                        Text("News Digest")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
                     }
                 }
                 
@@ -73,7 +64,7 @@ struct MiniPlayerView: View {
     private func handlePlayPause() {
         if audioService.isPlaying {
             audioService.pauseDigest()
-        } else if let player = audioService.audioPlayer {
+        } else if audioService.audioPlayer != nil {
             audioService.resumeDigest()
         }
     }
