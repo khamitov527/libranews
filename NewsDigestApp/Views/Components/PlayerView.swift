@@ -65,6 +65,37 @@ struct PlayerView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
+            // Article image
+            if let imageUrlString = segment.article.urlToImage,
+               let imageUrl = URL(string: imageUrlString) {
+                AsyncImage(url: imageUrl) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(height: 200)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 200)
+                            .clipped()
+                            .cornerRadius(12)
+                    case .failure:
+                        Color.gray.opacity(0.1)
+                            .frame(height: 200)
+                            .cornerRadius(12)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                            )
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+                .padding(.horizontal)
+            }
+            
+            // Article title (clickable if URL exists)
             if let urlString = segment.article.url, let url = URL(string: urlString) {
                 Button(action: {
                     selectedURL = url
@@ -84,6 +115,7 @@ struct PlayerView: View {
                     .padding(.horizontal)
             }
             
+            // Author and source info
             HStack(spacing: 4) {
                 if let author = segment.article.author {
                     Text(author)
@@ -213,35 +245,5 @@ struct SafariView: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {
-    }
-}
-
-struct URLConfirmationModal: View {
-    @Binding var isPresented: Bool
-    let url: URL
-    let onConfirm: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Do you want to visit the original article?")
-                .font(.headline)
-                .multilineTextAlignment(.center)
-            
-            HStack(spacing: 16) {
-                Button("Cancel") {
-                    isPresented = false
-                }
-                .buttonStyle(.bordered)
-                
-                Button("Open") {
-                    onConfirm()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 10)
     }
 }

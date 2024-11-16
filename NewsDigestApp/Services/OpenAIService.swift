@@ -7,7 +7,7 @@ class OpenAIService {
     private let systemPrompt = """
     You are a skilled podcast host creating engaging news digests. Your task is to:
     - Create natural, conversational narratives
-    - Keep segments to 20 seconds when read at natural pace
+    - Keep segments to 15 seconds when read at natural pace
     - Focus on key points and newsworthy elements
     - Add brief context when necessary
     - Use natural transitions and appropriate pauses
@@ -35,7 +35,7 @@ class OpenAIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
         let userPrompt = """
-        Create a 20-second news segment for this article:
+        Create a 15-second news segment for this article:
         
         Title: \(article.title)
         Summary: \(article.description ?? "")
