@@ -7,6 +7,7 @@ struct NewsSource: Identifiable, Codable, Hashable {
     let language: String
     let country: String
     let category: String
+    let url: URL? 
     
     // Implement Hashable
     func hash(into hasher: inout Hasher) {

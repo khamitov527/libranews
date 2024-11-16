@@ -20,7 +20,7 @@ struct TopicCard: View {
                     .lineLimit(2)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 80)
+            .frame(height: 55)
             .padding(.vertical, 8)
             .background(Color(.systemBackground))
             .cornerRadius(16)
@@ -38,38 +38,59 @@ struct SourceCard: View {
     let isSelected: Bool
     let action: () -> Void
     
+    // Computed property to get favicon URL
+    private var faviconURL: URL? {
+        // Google's favicon service - reliable and widely used
+        if let domain = source.url?.host {
+            return URL(string: "https://www.google.com/s2/favicons?domain=\(domain)&sz=128")
+        }
+        return nil
+    }
+    
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                // Source Icon (first letter in a circle)
-                ZStack {
-                    Circle()
-                        .fill(Color.secondary.opacity(0.1))
-                        .overlay(
-                            Circle()
-                                .stroke(isSelected ? Color.appBlue : Color.clear, lineWidth: 2)
-                        )
-                        .frame(width: 40, height: 40)
-                    
-                    Text(source.name.prefix(1))
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(isSelected ? .appBlue : .primary)
+            HStack(spacing: 12) {
+                // Logo/Icon
+                AsyncImage(url: faviconURL) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 30, height: 30)
+                } placeholder: {
+                    // Fallback to letter circle if image fails to load
+                    ZStack {
+                        Circle()
+                            .fill(Color.secondary.opacity(0.1))
+                            .overlay(
+                                Circle()
+                                    .stroke(isSelected ? Color.appBlue : Color.clear, lineWidth: 2)
+                            )
+                            .frame(width: 30, height: 30)
+                        
+                        Text(source.name.prefix(1))
+                            .font(.system(size: 14))
+                            .fontWeight(.semibold)
+                            .foregroundColor(isSelected ? .appBlue : .primary)
+                    }
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(source.name)
-                        .font(.subheadline)
+                        .font(.system(size: 13))
                         .fontWeight(.medium)
                         .foregroundColor(isSelected ? .appBlue : .primary)
+                        .lineLimit(1)
                     
                     Text(source.category.capitalized)
-                        .font(.caption)
+                        .font(.system(size: 11))
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
+                
+                Spacer()
             }
-            .frame(width: 120)
-            .padding(12)
+            .frame(width: 144, height: 55)
+            .padding(.horizontal, 12)
             .background(Color(.systemBackground))
             .cornerRadius(16)
             .overlay(
