@@ -37,27 +37,24 @@ struct SourceCard: View {
     let source: NewsSource
     let isSelected: Bool
     let action: () -> Void
-    
-    // Computed property to get favicon URL
+
     private var faviconURL: URL? {
-        // Google's favicon service - reliable and widely used
         if let domain = source.url?.host {
             return URL(string: "https://www.google.com/s2/favicons?domain=\(domain)&sz=128")
         }
         return nil
     }
-    
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                // Logo/Icon
+            VStack(spacing: 8) {
+                // Larger logo
                 AsyncImage(url: faviconURL) { image in
                     image
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 30, height: 30)
+                        .frame(width: 40, height: 40)
                 } placeholder: {
-                    // Fallback to letter circle if image fails to load
                     ZStack {
                         Circle()
                             .fill(Color.secondary.opacity(0.1))
@@ -65,37 +62,39 @@ struct SourceCard: View {
                                 Circle()
                                     .stroke(isSelected ? Color.appBlue : Color.clear, lineWidth: 2)
                             )
-                            .frame(width: 30, height: 30)
-                        
+                            .frame(width: 40, height: 40)
+
                         Text(source.name.prefix(1))
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                             .fontWeight(.semibold)
                             .foregroundColor(isSelected ? .appBlue : .primary)
                     }
                 }
-                
-                VStack(alignment: .leading, spacing: 2) {
+
+                // Text with smaller size
+                VStack(spacing: 2) {
                     Text(source.name)
-                        .font(.system(size: 13))
+                        .font(.system(size: 12))
                         .fontWeight(.medium)
                         .foregroundColor(isSelected ? .appBlue : .primary)
                         .lineLimit(1)
-                    
+                        .truncationMode(.tail)
+
                     Text(source.category.capitalized)
-                        .font(.system(size: 11))
+                        .font(.system(size: 10))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
-                
-                Spacer()
+                .multilineTextAlignment(.center)
             }
-            .frame(width: 144, height: 55)
-            .padding(.horizontal, 12)
+            .frame(width: 144, height: 90)
+            .padding(8)
             .background(Color(.systemBackground))
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(isSelected ? Color.appBlue : Color.gray.opacity(0.1), lineWidth: 2)
+                    .padding(1) // Ensures outline is fully visible
             )
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
@@ -116,20 +115,22 @@ struct TimeRangeCard: View {
                     .foregroundColor(isSelected ? .appBlue : .primary)
                 
                 Text(timeRange.title)
-                    .font(.subheadline)
+                    .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(isSelected ? .appBlue : .primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 80)
+            .frame(height: 55)
             .padding(.vertical, 8)
             .background(Color(.systemBackground))
             .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(isSelected ? Color.appBlue : Color.gray.opacity(0.1), lineWidth: 2)
             )
-            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
     }

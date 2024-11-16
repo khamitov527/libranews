@@ -75,7 +75,7 @@ struct HomeView: View {
             HStack {
                 sectionHeader("Select News Sources")
                 Spacer()
-                
+
                 // All Sources Toggle
                 Button(action: {
                     if newsService.hasAllSourcesSelected {
@@ -93,7 +93,7 @@ struct HomeView: View {
                     .foregroundColor(.appBlue)
                 }
             }
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(newsService.filteredSources) { source in
@@ -105,10 +105,14 @@ struct HomeView: View {
                         }
                     }
                 }
-                .padding(.horizontal)
+                .padding(.leading, 16)
+                .padding(.trailing, 16)
+                .padding(.vertical, 8) // Optional for better spacing
+                .frame(maxWidth: .infinity) // Ensures the HStack fills the ScrollView
             }
+            .edgesIgnoringSafeArea(.horizontal) // Prevents safe area padding on the sides
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 16) // Aligns with other sections
     }
     
     private var timeRangeSection: some View {
