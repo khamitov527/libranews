@@ -1,4 +1,5 @@
 import SwiftUI
+import SafariServices
 
 struct PlayerView: View {
     @Environment(\.dismiss) private var dismiss
@@ -6,18 +7,18 @@ struct PlayerView: View {
     @State private var hasStartedPlaying = false
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var showingURLConfirmation = false
+    @State private var selectedURL: URL? = nil
     
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                // Loading State
                 if audioService.isGenerating {
                     loadingView
                 }
                 
                 Spacer()
                 
-                // Current Article
                 if let currentSegment = audioService.audioQueue.first(where: { !$0.isPlayed }) {
                     articleInfoView(currentSegment)
                 }
@@ -41,6 +42,11 @@ struct PlayerView: View {
             } message: {
                 Text(errorMessage)
             }
+            .sheet(isPresented: $showingURLConfirmation) {
+                if let url = selectedURL {
+                    SafariView(url: url)
+                }
+            }
             .onAppear(perform: handleOnAppear)
         }
     }
@@ -59,12 +65,25 @@ struct PlayerView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
-            Text(segment.article.title)
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            if let urlString = segment.article.url, let url = URL(string: urlString) {
+                Button(action: {
+                    selectedURL = url
+                    showingURLConfirmation = true
+                }) {
+                    Text(segment.article.title)
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.appBlue)
+                        .padding(.horizontal)
+                }
+                .buttonStyle(ArticleTitleButtonStyle())
+            } else {
+                Text(segment.article.title)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
             
-            // Author and Source info
             HStack(spacing: 4) {
                 if let author = segment.article.author {
                     Text(author)
@@ -168,5 +187,54 @@ struct PlayerView: View {
         let newTime = min(player.duration, player.currentTime + 10)
         player.currentTime = newTime
         audioService.progress = newTime / player.duration
+    }
+}
+
+struct ArticleTitleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
+    }
+}
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+    
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        return SFSafariViewController(url: url)
+    }
+    
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {
+    }
+}
+
+struct URLConfirmationModal: View {
+    @Binding var isPresented: Bool
+    let url: URL
+    let onConfirm: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Do you want to visit the original article?")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+            
+            HStack(spacing: 16) {
+                Button("Cancel") {
+                    isPresented = false
+                }
+                .buttonStyle(.bordered)
+                
+                Button("Open") {
+                    onConfirm()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 10)
     }
 }
