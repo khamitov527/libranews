@@ -58,11 +58,34 @@ struct PlayerView: View {
             Text("Now Playing")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+            
             Text(segment.article.title)
                 .font(.headline)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+            
+            // Author and Source info
+            HStack(spacing: 4) {
+                if let author = segment.article.author {
+                    Text(author)
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                }
+                
+                if segment.article.author != nil && segment.article.source.name != "" {
+                    Text("•")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                }
+                
+                if segment.article.source.name != "" {
+                    Text(segment.article.source.name)
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                }
+            }
         }
+        .padding(.horizontal)
     }
     
     private var progressBar: some View {

@@ -7,6 +7,7 @@ struct Article: Identifiable, Codable {
     let content: String?
     let source: ArticleSource
     let publishedAt: Date?
+    let author: String?
     
     enum CodingKeys: String, CodingKey {
         case source
@@ -14,6 +15,7 @@ struct Article: Identifiable, Codable {
         case description
         case content
         case publishedAt
+        case author
     }
     
     init(from decoder: Decoder) throws {
@@ -22,6 +24,7 @@ struct Article: Identifiable, Codable {
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         self.content = try container.decodeIfPresent(String.self, forKey: .content)
         self.source = try container.decode(ArticleSource.self, forKey: .source)
+        self.author = try container.decodeIfPresent(String.self, forKey: .author)
         
         // Parse the date string
         if let dateString = try container.decodeIfPresent(String.self, forKey: .publishedAt) {
@@ -38,6 +41,7 @@ struct Article: Identifiable, Codable {
         try container.encode(source, forKey: .source)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encodeIfPresent(content, forKey: .content)
+        try container.encodeIfPresent(author, forKey: .author)
         if let publishedAt = publishedAt {
             let dateFormatter = ISO8601DateFormatter()
             try container.encode(dateFormatter.string(from: publishedAt), forKey: .publishedAt)
