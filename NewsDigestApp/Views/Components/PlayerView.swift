@@ -25,7 +25,6 @@ struct PlayerView: View {
                 
                 progressBar
                 controlsView
-                queueStatusView
                 
                 Spacer()
             }
@@ -34,7 +33,11 @@ struct PlayerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") { dismiss() }
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
                 }
             }
             .alert("Playback Issue", isPresented: $showingError) {
@@ -61,10 +64,6 @@ struct PlayerView: View {
     
     private func articleInfoView(_ segment: ArticleAudioSegment) -> some View {
         VStack(spacing: 8) {
-            Text("Now Playing")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
             // Article image
             if let imageUrlString = segment.article.urlToImage,
                let imageUrl = URL(string: imageUrlString) {
@@ -101,11 +100,15 @@ struct PlayerView: View {
                     selectedURL = url
                     showingURLConfirmation = true
                 }) {
-                    Text(segment.article.title)
-                        .font(.headline)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.appBlue)
-                        .padding(.horizontal)
+                    HStack {
+                        Text(segment.article.title)
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.appBlue)
+                        Image(systemName: "link")
+                            .foregroundColor(.appBlue)
+                    }
+                    .padding(.horizontal)
                 }
                 .buttonStyle(ArticleTitleButtonStyle())
             } else {
@@ -182,12 +185,6 @@ struct PlayerView: View {
             .disabled(!canGoToNext)
         }
         .padding()
-    }
-    
-    private var queueStatusView: some View {
-        Text("\(audioService.currentSegmentIndex + 1)/\(audioService.audioQueue.count) Articles")
-            .font(.caption)
-            .foregroundColor(.secondary)
     }
     
     // MARK: - Actions
