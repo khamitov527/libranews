@@ -19,7 +19,7 @@ struct PlayerView: View {
                 
                 Spacer()
                 
-                if let currentSegment = audioService.audioQueue.first(where: { !$0.isPlayed }) {
+                if let currentSegment = audioService.currentSegment {
                     articleInfoView(currentSegment)
                 }
                 
@@ -153,7 +153,7 @@ struct PlayerView: View {
     }
     
     private var queueStatusView: some View {
-        Text("\(audioService.audioQueue.filter { $0.isPlayed }.count)/\(audioService.audioQueue.count) Articles")
+        Text("\(audioService.currentSegmentIndex + 1)/\(audioService.audioQueue.count) Articles")
             .font(.caption)
             .foregroundColor(.secondary)
     }
