@@ -40,7 +40,7 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("libranews")
+                    Text("libra news")
                         .font(.system(size: 32, weight: .bold, design: .default))
                         .foregroundColor(.appBlue)
                 }
