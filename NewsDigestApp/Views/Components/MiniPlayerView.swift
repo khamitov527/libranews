@@ -19,14 +19,12 @@ struct MiniPlayerView: View {
                     
                     if let segment = currentSegment {
                         VStack(alignment: .leading, spacing: 2) {
-                            // Article title - truncated if too long
                             Text(segment.article.title)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
                             
-                            // Author and source
                             HStack(spacing: 4) {
                                 if let author = segment.article.author {
                                     Text(author)
@@ -59,7 +57,6 @@ struct MiniPlayerView: View {
                 
                 Spacer()
                 
-                // Play/Pause button
                 Button(action: handlePlayPause) {
                     Image(systemName: audioService.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title3)
@@ -69,10 +66,6 @@ struct MiniPlayerView: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
-            .background(
-                Color(.systemBackground)
-                    .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: -2)
-            )
         }
         .buttonStyle(PlainButtonStyle())
     }

@@ -5,6 +5,22 @@ struct MainTabView: View {
     @State private var showingPlayer = false
     @State private var selectedTab = 0
     
+    init() {
+        // Make UITabBar translucent
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
+        
+        // Keep the same colors but with transparency
+        appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.5)
+        
+        // Apply to both standard and scrolled appearances
+        UITabBar.appearance().standardAppearance = appearance
+        if #available(iOS 15.0, *) {
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
+    }
+    
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
@@ -28,6 +44,12 @@ struct MainTabView: View {
                 if audioService.audioPlayer != nil {
                     MiniPlayerView(audioService: audioService, showingPlayer: $showingPlayer)
                         .transition(.move(edge: .bottom))
+                        .background(
+                            // Add blur effect to mini player
+                            Rectangle()
+                                .fill(.ultraThinMaterial)
+                                .edgesIgnoringSafeArea(.all)
+                        )
                 }
                 
                 // Invisible spacer matching tab bar height
