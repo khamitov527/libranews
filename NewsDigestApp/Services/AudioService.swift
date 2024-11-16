@@ -28,9 +28,13 @@ class AudioService: NSObject, ObservableObject {
     var audioPlayer: AVAudioPlayer?
     private var _articles: [Article] = []
     private var timer: Timer?
-    private var currentSegmentIndex: Int = 0
+    private var _currentSegmentIndex: Int = 0
     private let openAIService = OpenAIService()
     private var voiceService: VoiceService!
+    
+    var currentSegmentIndex: Int {
+        _currentSegmentIndex
+    }
     
     // MARK: - Initialization
     override init() {
@@ -56,7 +60,7 @@ class AudioService: NSObject, ObservableObject {
         }
         
         audioQueue.removeAll()
-        currentSegmentIndex = 0
+        _currentSegmentIndex = 0
         isGenerating = true
         
         // Process and play first article
@@ -142,7 +146,7 @@ class AudioService: NSObject, ObservableObject {
         audioPlayer?.stop()
         audioPlayer = nil
         audioQueue.removeAll()
-        currentSegmentIndex = 0
+        _currentSegmentIndex = 0
         isPlaying = false
         isGenerating = false
         progress = 0
@@ -188,6 +192,19 @@ class AudioService: NSObject, ObservableObject {
             self.progress = player.currentTime / player.duration
         }
     }
+    
+    func playPreviousSegment() {
+        guard currentSegmentIndex > 0 else { return }
+        _currentSegmentIndex -= 1
+        startPlayingCurrentSegment()
+    }
+    
+    func playNextSegment() {
+        guard currentSegmentIndex < audioQueue.count - 1 else { return }
+        audioQueue[currentSegmentIndex].isPlayed = true
+        _currentSegmentIndex += 1
+        startPlayingCurrentSegment()
+    }
 }
 
 // MARK: - AVAudioPlayerDelegate
@@ -195,7 +212,7 @@ extension AudioService: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         if flag {
             audioQueue[currentSegmentIndex].isPlayed = true
-            currentSegmentIndex += 1
+            _currentSegmentIndex += 1
             if currentSegmentIndex < audioQueue.count {
                 startPlayingCurrentSegment()
                 loadNextArticle()

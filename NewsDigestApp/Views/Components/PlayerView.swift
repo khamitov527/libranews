@@ -125,13 +125,13 @@ struct PlayerView: View {
     
     private var controlsView: some View {
         HStack(spacing: 40) {
-            // Rewind
-            Button(action: handleRewind) {
-                Image(systemName: "gobackward.10")
+            // Previous
+            Button(action: handlePrevious) {
+                Image(systemName: "backward.end.fill")
                     .font(.system(size: 32))
-                    .foregroundColor(audioService.isGenerating ? .gray : .primary)
+                    .foregroundColor(canGoToPrevious ? .primary : .gray)
             }
-            .disabled(audioService.isGenerating)
+            .disabled(!canGoToPrevious)
             
             // Play/Pause
             Button(action: handlePlayPause) {
@@ -141,13 +141,13 @@ struct PlayerView: View {
             }
             .disabled(audioService.isGenerating)
             
-            // Forward
-            Button(action: handleForward) {
-                Image(systemName: "goforward.10")
+            // Next
+            Button(action: handleNext) {
+                Image(systemName: "forward.end.fill")
                     .font(.system(size: 32))
-                    .foregroundColor(audioService.isGenerating ? .gray : .primary)
+                    .foregroundColor(canGoToNext ? .primary : .gray)
             }
-            .disabled(audioService.isGenerating)
+            .disabled(!canGoToNext)
         }
         .padding()
     }
@@ -175,18 +175,25 @@ struct PlayerView: View {
         }
     }
     
-    private func handleRewind() {
-        guard let player = audioService.audioPlayer else { return }
-        let newTime = max(0, player.currentTime - 10)
-        player.currentTime = newTime
-        audioService.progress = newTime / player.duration
+    // Add computed properties for button states
+    private var canGoToPrevious: Bool {
+        !audioService.audioQueue.isEmpty && audioService.currentSegmentIndex > 0
     }
     
-    private func handleForward() {
-        guard let player = audioService.audioPlayer else { return }
-        let newTime = min(player.duration, player.currentTime + 10)
-        player.currentTime = newTime
-        audioService.progress = newTime / player.duration
+    private var canGoToNext: Bool {
+        !audioService.audioQueue.isEmpty &&
+        audioService.currentSegmentIndex < audioService.audioQueue.count - 1
+    }
+    
+    // Add new action handlers
+    private func handlePrevious() {
+        guard canGoToPrevious else { return }
+        audioService.playPreviousSegment()
+    }
+    
+    private func handleNext() {
+        guard canGoToNext else { return }
+        audioService.playNextSegment()
     }
 }
 

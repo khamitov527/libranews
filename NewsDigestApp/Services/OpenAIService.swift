@@ -26,6 +26,8 @@ class OpenAIService {
         guard let url = URL(string: endpoint) else {
             throw OpenAIError.invalidURL
         }
+//        
+//        return "blah blah blaaaaah"
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
