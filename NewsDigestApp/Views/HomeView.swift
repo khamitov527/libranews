@@ -23,7 +23,6 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 32) {
-                    welcomeSection
                     topicsSection
                     if !newsService.selectedTopics.isEmpty {
                         sourcesSection
@@ -39,26 +38,20 @@ struct HomeView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("libranews")
+                        .font(.system(size: 32, weight: .bold, design: .default))
+                        .foregroundColor(.appBlue)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
             .miniPlayerPadding(audioService)
             .onAppear(perform: loadInitialData)
         }
     }
     
     // MARK: - Views
-    private var welcomeSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Your Daily")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            Text("News Digest")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundColor(.appBlue)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal)
-    }
-    
     private var topicsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader("Select Your Interests")
