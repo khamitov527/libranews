@@ -2,9 +2,6 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
-    @State private var email = ""
-    @State private var password = ""
-    @State private var isSigningUp = false
     
     var body: some View {
         NavigationView {
@@ -20,46 +17,28 @@ struct AuthenticationView: View {
                 }
                 .padding(.vertical, 40)
                 
-                // Form Fields
-                VStack(spacing: 16) {
-                    TextField("Email", text: $email)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .textContentType(.emailAddress)
-                        .autocapitalization(.none)
-                        .keyboardType(.emailAddress)
-                    
-                    SecureField("Password", text: $password)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .textContentType(isSigningUp ? .newPassword : .password)
-                }
-                .padding(.horizontal)
-                
-                // Sign In/Up Button
+                // Google Sign In Button
                 Button {
                     Task {
-                        if isSigningUp {
-                            await authManager.signUp(email: email, password: password)
-                        } else {
-                            await authManager.signIn(email: email, password: password)
-                        }
+                        await authManager.signInWithGoogle()
                     }
                 } label: {
-                    Text(isSigningUp ? "Sign Up" : "Sign In")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                    HStack {
+                        Image("google_logo") // You'll need to add this image to your assets
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        
+                        Text("Sign in with Google")
+                            .font(.headline)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .shadow(radius: 2)
                 }
                 .padding(.horizontal)
-                
-                // Toggle Sign In/Up
-                Button {
-                    isSigningUp.toggle()
-                } label: {
-                    Text(isSigningUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-                        .foregroundColor(.blue)
-                }
                 
                 Spacer()
             }
