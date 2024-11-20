@@ -20,13 +20,11 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
-                NavigationView {
-                    HomeView(audioService: audioService, showingPlayer: $showingPlayer)
-                }
-                .tabItem {
-                    Label("Home", systemImage: "house")
-                }
-                .tag(0)
+                HomeView(audioService: audioService, showingPlayer: $showingPlayer)
+                    .tabItem {
+                        Label("Home", systemImage: "house")
+                    }
+                    .tag(0)
                 
                 ProfileView()
                     .tabItem {

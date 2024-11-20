@@ -32,24 +32,34 @@ struct HomeView: View {
                         .background(Color(.systemBackground))
                     
                     // Tab Bar
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 32) {
-                            ForEach(0..<tabs.count, id: \.self) { index in
-                                TabLabel(
-                                    text: tabs[index],
-                                    isSelected: selectedTab == index
-                                )
-                                .onTapGesture {
-                                    withAnimation {
-                                        selectedTab = index
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 32) {
+                                ForEach(0..<tabs.count, id: \.self) { index in
+                                    TabLabel(
+                                        text: tabs[index],
+                                        isSelected: selectedTab == index
+                                    )
+                                    .id(index) // Assign ID here
+                                    .onTapGesture {
+                                        withAnimation {
+                                            selectedTab = index
+                                            proxy.scrollTo(index, anchor: .center)
+                                        }
                                     }
                                 }
                             }
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemBackground))
+                        // Use a different parameter name to avoid conflict
+                        .onChange(of: selectedTab) { newTab in
+                            withAnimation {
+                                proxy.scrollTo(newTab, anchor: .center)
+                            }
+                        }
                     }
-                    .padding(.vertical, 8)
-                    .background(Color(.systemBackground))
                     
                     Divider()
                 }
