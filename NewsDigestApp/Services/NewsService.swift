@@ -6,6 +6,8 @@ class NewsService: ObservableObject {
     @Published var isLoadingBreaking = false
     @Published var isLoadingTrending = false
     @Published var error: Error?
+    @Published var topicArticles: [String: [Article]] = [:]
+    @Published var isLoadingTopic = false
     
     private let apiKey = Secrets.newsAPIKey
     
@@ -81,4 +83,42 @@ class NewsService: ObservableObject {
             }
         }.resume()
     }
+    
+    func fetchArticlesForTopic(_ topic: String) {
+        isLoadingTopic = true
+        error = nil
+        
+        let urlString = "https://newsapi.org/v2/everything?q=\(topic)&language=en&sortBy=publishedAt&pageSize=10&apiKey=\(apiKey)"
+        
+        guard let encodedString = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: encodedString) else {
+            isLoadingTopic = false
+            error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                self?.isLoadingTopic = false
+                
+                if let error = error {
+                    self?.error = error
+                    return
+                }
+                
+                guard let data = data else {
+                    self?.error = NSError(domain: "", code: -2, userInfo: [NSLocalizedDescriptionKey: "No data received"])
+                    return
+                }
+                
+                do {
+                    let response = try JSONDecoder().decode(NewsAPIResponse.self, from: data)
+                    self?.topicArticles[topic] = response.articles
+                } catch {
+                    self?.error = error
+                }
+            }
+        }.resume()
+    }
 }
+

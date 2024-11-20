@@ -1,18 +1,28 @@
 import SwiftUI
+import FirebaseAuth
 
 struct HomeView: View {
     // MARK: - Properties
     @ObservedObject var audioService: AudioService
     @StateObject private var newsService = NewsService()
+    @StateObject private var preferencesService = UserPreferencesService()
     @Binding var showingPlayer: Bool
     @State private var selectedTab = 0
     
-    private let tabs = ["Breaking News", "Trending"]
+    // Compute tabs based on default tabs + user preferences
+    private var tabs: [String] {
+        let defaultTabs = ["Breaking News", "Trending"]
+        let topicTabs = Topic.available
+            .filter { preferencesService.preferences.topicIds.contains($0.id) }
+            .map { $0.name }
+        return defaultTabs + topicTabs
+    }
     
     // MARK: - Body
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // Navigation Bar with App Name and Tabs
                 VStack(spacing: 0) {
                     Text("libra news")
                         .font(.system(size: 32, weight: .bold, design: .default))
@@ -21,6 +31,7 @@ struct HomeView: View {
                         .padding(.vertical, 12)
                         .background(Color(.systemBackground))
                     
+                    // Tab Bar
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 32) {
                             ForEach(0..<tabs.count, id: \.self) { index in
@@ -46,78 +57,104 @@ struct HomeView: View {
                 // Content
                 TabView(selection: $selectedTab) {
                     // Breaking News Page
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            if newsService.isLoadingBreaking {
-                                ProgressView()
-                                    .padding()
-                            } else if let error = newsService.error {
-                                Text(error.localizedDescription)
-                                    .foregroundColor(.red)
-                                    .padding()
-                            } else if newsService.breakingArticles.isEmpty {
-                                Text("No breaking news available")
-                                    .foregroundColor(.secondary)
-                                    .padding()
-                            } else {
-                                ForEach(newsService.breakingArticles, id: \.url) { article in
-                                    ArticleCard(article: article)
-                                }
-                                listenButton
-                                    .padding(.top)
-                            }
-                        }
-                        .padding(.vertical)
-                    }
+                    ArticleListView(
+                        articles: newsService.breakingArticles,
+                        isLoading: newsService.isLoadingBreaking,
+                        error: newsService.error,
+                        emptyMessage: "No breaking news available",
+                        audioService: audioService,
+                        showingPlayer: $showingPlayer
+                    )
                     .tag(0)
                     
                     // Trending Page
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            if newsService.isLoadingTrending {
-                                ProgressView()
-                                    .padding()
-                            } else if let error = newsService.error {
-                                Text(error.localizedDescription)
-                                    .foregroundColor(.red)
-                                    .padding()
-                            } else if newsService.trendingArticles.isEmpty {
-                                Text("No trending news available")
-                                    .foregroundColor(.secondary)
-                                    .padding()
-                            } else {
-                                ForEach(newsService.trendingArticles, id: \.url) { article in
-                                    ArticleCard(article: article)
-                                }
-                                listenButton
-                                    .padding(.top)
-                            }
-                        }
-                        .padding(.vertical)
-                    }
+                    ArticleListView(
+                        articles: newsService.trendingArticles,
+                        isLoading: newsService.isLoadingTrending,
+                        error: newsService.error,
+                        emptyMessage: "No trending news available",
+                        audioService: audioService,
+                        showingPlayer: $showingPlayer
+                    )
                     .tag(1)
+                    
+                    // Topic Pages
+                    ForEach(2..<tabs.count, id: \.self) { index in
+                        ArticleListView(
+                            articles: newsService.topicArticles[tabs[index]] ?? [],
+                            isLoading: newsService.isLoadingTopic,
+                            error: newsService.error,
+                            emptyMessage: "No articles available for \(tabs[index])",
+                            audioService: audioService,
+                            showingPlayer: $showingPlayer
+                        )
+                        .tag(index)
+                    }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .background(Color(.systemGroupedBackground))
             }
             .navigationBarHidden(true)
             .miniPlayerPadding(audioService)
-            .onAppear {
-                newsService.fetchBreakingNews()
-                newsService.fetchTrendingNews()
+            .task {
+                // Load user preferences
+                if let userId = Auth.auth().currentUser?.uid {
+                    try? await preferencesService.loadPreferences(for: userId)
+                }
             }
             .onChange(of: selectedTab) { newTab in
-                // Refresh the selected tab's content
-                if newTab == 0 {
-                    newsService.fetchBreakingNews()
-                } else {
-                    newsService.fetchTrendingNews()
-                }
+                loadArticlesForTab(newTab)
             }
         }
     }
     
-    // MARK: - Views
+    private func loadArticlesForTab(_ tab: Int) {
+        if tab == 0 {
+            newsService.fetchBreakingNews()
+        } else if tab == 1 {
+            newsService.fetchTrendingNews()
+        } else if tab < tabs.count {
+            let topic = tabs[tab]
+            newsService.fetchArticlesForTopic(topic)
+        }
+    }
+}
+
+// Article List View to reduce duplication
+struct ArticleListView: View {
+    let articles: [Article]
+    let isLoading: Bool
+    let error: Error?
+    let emptyMessage: String
+    let audioService: AudioService
+    @Binding var showingPlayer: Bool
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                if isLoading {
+                    ProgressView()
+                        .padding()
+                } else if let error = error {
+                    Text(error.localizedDescription)
+                        .foregroundColor(.red)
+                        .padding()
+                } else if articles.isEmpty {
+                    Text(emptyMessage)
+                        .foregroundColor(.secondary)
+                        .padding()
+                } else {
+                    ForEach(articles, id: \.url) { article in
+                        ArticleCard(article: article)
+                    }
+                    listenButton
+                        .padding(.top)
+                }
+            }
+            .padding(.vertical)
+        }
+    }
+    
     private var listenButton: some View {
         Button(action: { handleListenButtonTap() }) {
             HStack {
@@ -142,18 +179,17 @@ struct HomeView: View {
         .padding(.horizontal)
     }
     
-    // MARK: - Methods
     private func handleListenButtonTap() {
         Task {
             audioService.reset()
             audioService.voiceServiceType = .openai
-            let articles = selectedTab == 0 ? newsService.breakingArticles : newsService.trendingArticles
             audioService.setArticles(articles)
             showingPlayer = true
             await audioService.startPlayback()
         }
     }
 }
+
 
 // Custom Tab Label styled like CNN app
 struct TabLabel: View {
