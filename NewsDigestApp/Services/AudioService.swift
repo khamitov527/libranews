@@ -42,6 +42,12 @@ class AudioService: NSObject, ObservableObject {
         setupVoiceService()
     }
     
+    func playArticle(_ article: Article) async {
+        reset() // Clear everything first
+        _articles = [article] // Set only this article
+        await startPlayback()
+    }
+    
     // MARK: - Main Workflow
     
     /// Step 1: Set articles and start playback

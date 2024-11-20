@@ -2,34 +2,53 @@ import SwiftUI
 
 struct ArticleCard: View {
     let article: Article
+    let audioService: AudioService
+    @Binding var showingPlayer: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Article Image
+            // Article Image with Play Button Overlay
             if let urlString = article.urlToImage, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .empty:
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(height: 200)
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 200)
-                            .clipped()
-                    case .failure:
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(height: 200)
-                            .overlay(
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                            )
-                    @unknown default:
-                        EmptyView()
+                ZStack(alignment: .bottomTrailing) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 200)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 200)
+                                .clipped()
+                        case .failure:
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 200)
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .foregroundColor(.gray)
+                                )
+                        @unknown default:
+                            EmptyView()
+                        }
                     }
+                    
+                    // Play Button
+                    Button {
+                        Task {
+                            audioService.voiceServiceType = .openai
+                            showingPlayer = true
+                            await audioService.playArticle(article)
+                        }
+                    } label: {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                    }
+                    .padding(16)
                 }
             }
             
@@ -47,6 +66,21 @@ struct ArticleCard: View {
                         Text(timeAgo(from: publishedAt))
                             .font(.caption)
                             .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    // Small Play Button
+                    Button {
+                        Task {
+                            audioService.voiceServiceType = .openai
+                            showingPlayer = true
+                            await audioService.playArticle(article)
+                        }
+                    } label: {
+                        Image(systemName: "headphones.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.appBlue)
                     }
                 }
                 

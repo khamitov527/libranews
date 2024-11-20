@@ -145,38 +145,16 @@ struct ArticleListView: View {
                         .padding()
                 } else {
                     ForEach(articles, id: \.url) { article in
-                        ArticleCard(article: article)
+                        ArticleCard(
+                            article: article,
+                            audioService: audioService,
+                            showingPlayer: $showingPlayer
+                        )
                     }
-                    listenButton
-                        .padding(.top)
                 }
             }
             .padding(.vertical)
         }
-    }
-    
-    private var listenButton: some View {
-        Button(action: { handleListenButtonTap() }) {
-            HStack {
-                if audioService.isGenerating {
-                    ProgressView()
-                        .tint(.white)
-                        .padding(.trailing, 4)
-                }
-                
-                Text(audioService.isGenerating ? "Generating..." : "Listen Now")
-                    .fontWeight(.semibold)
-                Image(systemName: "headphones")
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(Color.appBlue)
-            .foregroundColor(.white)
-            .cornerRadius(28)
-            .shadow(color: .appBlue.opacity(0.3), radius: 8, x: 0, y: 4)
-        }
-        .disabled(audioService.isGenerating)
-        .padding(.horizontal)
     }
     
     private func handleListenButtonTap() {
@@ -189,7 +167,6 @@ struct ArticleListView: View {
         }
     }
 }
-
 
 // Custom Tab Label styled like CNN app
 struct TabLabel: View {
