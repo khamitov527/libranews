@@ -1,6 +1,6 @@
 import Foundation
 
-struct Article: Identifiable, Codable {
+struct Article: Identifiable, Codable, Hashable {
     let id = UUID()
     let title: String
     let description: String?
@@ -20,6 +20,20 @@ struct Article: Identifiable, Codable {
         case author
         case url
         case urlToImage
+    }
+    
+    // Add hash function for Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(title)
+        hasher.combine(url)
+    }
+    
+    // Add static equals function for Equatable conformance
+    static func == (lhs: Article, rhs: Article) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.title == rhs.title &&
+               lhs.url == rhs.url
     }
     
     // uncomment init to test with dummy data
@@ -70,8 +84,18 @@ struct Article: Identifiable, Codable {
 //    }
 }
 
-struct ArticleSource: Codable {
+struct ArticleSource: Codable, Hashable {
     let name: String
+    
+    // Add hash function for Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+    }
+    
+    // Add static equals function for Equatable conformance
+    static func == (lhs: ArticleSource, rhs: ArticleSource) -> Bool {
+        return lhs.name == rhs.name
+    }
 }
 
 struct NewsAPIResponse: Codable {

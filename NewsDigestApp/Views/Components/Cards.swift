@@ -4,84 +4,97 @@ struct ArticleCard: View {
     let article: Article
     let audioService: AudioService
     @Binding var showingPlayer: Bool
+    @Binding var selectedArticles: Set<Article>
     
     @State private var showActionButtons = false
+    @State private var isSelected = false
     
     var body: some View {
         ZStack {
             // Main content
             HStack(alignment: .top, spacing: 12) {
-                // Article Image
-                if let urlString = article.urlToImage, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .empty:
+                Button {
+                    toggleSelection()
+                } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        // Article Image
+                        if let urlString = article.urlToImage, let url = URL(string: urlString) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 80, height: 80)
+                                        .cornerRadius(8)
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 80, height: 80)
+                                        .cornerRadius(8)
+                                        .clipped()
+                                case .failure:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 80, height: 80)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            Image(systemName: "photo")
+                                                .foregroundColor(.gray)
+                                        )
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+                        } else {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(width: 80, height: 80)
                                 .cornerRadius(8)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(8)
-                                .clipped()
-                        case .failure:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(8)
-                                .overlay(
-                                    Image(systemName: "photo")
-                                        .foregroundColor(.gray)
-                                )
-                        @unknown default:
-                            EmptyView()
                         }
-                    }
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(8)
-                }
-                
-                // Article Details
-                VStack(alignment: .leading, spacing: 4) {
-                    // Title
-                    Text(article.title)
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .lineLimit(3)
-                    
-                    // Description
-                    if let description = article.description {
-                        Text(description)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                    
-                    Spacer().frame(height: 4)
-                    
-                    // Source and Time
-                    HStack(spacing: 4) {
-                        Text(article.source.name)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                         
-                        if let publishedAt = article.publishedAt {
-                            Text("•")
-                                .foregroundColor(.secondary)
-                            Text(timeAgo(from: publishedAt))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                        // Article Details
+                        VStack(alignment: .leading, spacing: 4) {
+                            // Title
+                            Text(article.title)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                                .lineLimit(3)
+                            
+                            // Description
+                            if let description = article.description {
+                                Text(description)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(2)
+                            }
+                            
+                            Spacer().frame(height: 4)
+                            
+                            // Source and Time
+                            HStack(spacing: 4) {
+                                Text(article.source.name)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                if let publishedAt = article.publishedAt {
+                                    Text("•")
+                                        .foregroundColor(.secondary)
+                                    Text(timeAgo(from: publishedAt))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
                         }
                     }
                 }
+                .buttonStyle(PlainButtonStyle())
                 
-                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.title2)
+                }
                 
                 // Three-dot Button
                 Button(action: {
@@ -100,6 +113,10 @@ struct ArticleCard: View {
             .padding()
             .background(Color(.systemBackground))
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            )
             .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
             .padding(.horizontal)
             .swipeActions(edge: .trailing) {
@@ -207,6 +224,15 @@ struct ArticleCard: View {
         .padding()
         .background(.regularMaterial)
         .cornerRadius(12)
+    }
+    
+    private func toggleSelection() {
+        isSelected.toggle()
+        if isSelected {
+            selectedArticles.insert(article)
+        } else {
+            selectedArticles.remove(article)
+        }
     }
     
     private func timeAgo(from date: Date) -> String {

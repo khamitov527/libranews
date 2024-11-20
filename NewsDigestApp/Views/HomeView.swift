@@ -8,6 +8,7 @@ struct HomeView: View {
     @StateObject private var preferencesService = UserPreferencesService()
     @Binding var showingPlayer: Bool
     @State private var selectedTab = 0
+    @State private var selectedArticles: Set<Article> = []
     
     // Compute tabs based on default tabs + user preferences
     private var tabs: [String] {
@@ -21,99 +22,120 @@ struct HomeView: View {
     // MARK: - Body
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Navigation Bar with App Name and Tabs
+            ZStack {
                 VStack(spacing: 0) {
-                    Text("libra news")
-                        .font(.system(size: 32, weight: .bold, design: .default))
-                        .foregroundColor(.appBlue)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(.systemBackground))
-                    
-                    // Tab Bar
-                    ScrollViewReader { proxy in
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 32) {
-                                ForEach(0..<tabs.count, id: \.self) { index in
-                                    TabLabel(
-                                        text: tabs[index],
-                                        isSelected: selectedTab == index
-                                    )
-                                    .id(index) // Assign ID here
-                                    .onTapGesture {
-                                        withAnimation {
-                                            selectedTab = index
-                                            proxy.scrollTo(index, anchor: .center)
+                    // Navigation Bar with App Name and Tabs
+                    VStack(spacing: 0) {
+                        Text("libra news")
+                            .font(.system(size: 32, weight: .bold, design: .default))
+                            .foregroundColor(.appBlue)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemBackground))
+                        
+                        // Tab Bar
+                        ScrollViewReader { proxy in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 32) {
+                                    ForEach(0..<tabs.count, id: \.self) { index in
+                                        TabLabel(
+                                            text: tabs[index],
+                                            isSelected: selectedTab == index
+                                        )
+                                        .id(index)
+                                        .onTapGesture {
+                                            withAnimation {
+                                                selectedTab = index
+                                                proxy.scrollTo(index, anchor: .center)
+                                            }
                                         }
                                     }
                                 }
+                                .padding(.horizontal)
                             }
-                            .padding(.horizontal)
-                        }
-                        .padding(.vertical, 8)
-                        .background(Color(.systemBackground))
-                        // Use a different parameter name to avoid conflict
-                        .onChange(of: selectedTab) { newTab in
-                            withAnimation {
-                                proxy.scrollTo(newTab, anchor: .center)
+                            .padding(.vertical, 8)
+                            .background(Color(.systemBackground))
+                            .onChange(of: selectedTab) { newTab in
+                                withAnimation {
+                                    proxy.scrollTo(newTab, anchor: .center)
+                                }
                             }
                         }
+                        
+                        Divider()
                     }
                     
-                    Divider()
+                    // Content
+                    TabView(selection: $selectedTab) {
+                        // Breaking News Page
+                        ArticleListView(
+                            articles: newsService.breakingArticles,
+                            isLoading: newsService.isLoadingBreaking,
+                            error: newsService.error,
+                            emptyMessage: "No breaking news available",
+                            audioService: audioService,
+                            showingPlayer: $showingPlayer,
+                            selectedArticles: $selectedArticles
+                        )
+                        .tag(0)
+                        
+                        // Trending Page
+                        ArticleListView(
+                            articles: newsService.trendingArticles,
+                            isLoading: newsService.isLoadingTrending,
+                            error: newsService.error,
+                            emptyMessage: "No trending news available",
+                            audioService: audioService,
+                            showingPlayer: $showingPlayer,
+                            selectedArticles: $selectedArticles
+                        )
+                        .tag(1)
+                        
+                        // Topic Pages
+                        ForEach(2..<tabs.count, id: \.self) { index in
+                            ArticleListView(
+                                articles: newsService.topicArticles[tabs[index]] ?? [],
+                                isLoading: newsService.isLoadingTopic,
+                                error: newsService.error,
+                                emptyMessage: "No articles available for \(tabs[index])",
+                                audioService: audioService,
+                                showingPlayer: $showingPlayer,
+                                selectedArticles: $selectedArticles
+                            )
+                            .tag(index)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .background(Color(.systemGroupedBackground))
+                }
+                .navigationBarHidden(true)
+                .miniPlayerPadding(audioService)
+                .task {
+                    // Load user preferences
+                    if let userId = Auth.auth().currentUser?.uid {
+                        try? await preferencesService.loadPreferences(for: userId)
+                    }
+                }
+                .onChange(of: selectedTab) { newTab in
+                    loadArticlesForTab(newTab)
                 }
                 
-                // Content
-                TabView(selection: $selectedTab) {
-                    // Breaking News Page
-                    ArticleListView(
-                        articles: newsService.breakingArticles,
-                        isLoading: newsService.isLoadingBreaking,
-                        error: newsService.error,
-                        emptyMessage: "No breaking news available",
-                        audioService: audioService,
-                        showingPlayer: $showingPlayer
-                    )
-                    .tag(0)
-                    
-                    // Trending Page
-                    ArticleListView(
-                        articles: newsService.trendingArticles,
-                        isLoading: newsService.isLoadingTrending,
-                        error: newsService.error,
-                        emptyMessage: "No trending news available",
-                        audioService: audioService,
-                        showingPlayer: $showingPlayer
-                    )
-                    .tag(1)
-                    
-                    // Topic Pages
-                    ForEach(2..<tabs.count, id: \.self) { index in
-                        ArticleListView(
-                            articles: newsService.topicArticles[tabs[index]] ?? [],
-                            isLoading: newsService.isLoadingTopic,
-                            error: newsService.error,
-                            emptyMessage: "No articles available for \(tabs[index])",
-                            audioService: audioService,
-                            showingPlayer: $showingPlayer
-                        )
-                        .tag(index)
+                // Create Playlist Button
+                if !selectedArticles.isEmpty {
+                    VStack {
+                        Spacer()
+                        Button(action: createPlaylist) {
+                            Text("Create Playlist (\(selectedArticles.count))")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue)
+                                .cornerRadius(12)
+                                .padding()
+                        }
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .background(Color(.systemGroupedBackground))
-            }
-            .navigationBarHidden(true)
-            .miniPlayerPadding(audioService)
-            .task {
-                // Load user preferences
-                if let userId = Auth.auth().currentUser?.uid {
-                    try? await preferencesService.loadPreferences(for: userId)
-                }
-            }
-            .onChange(of: selectedTab) { newTab in
-                loadArticlesForTab(newTab)
             }
         }
     }
@@ -128,6 +150,18 @@ struct HomeView: View {
             newsService.fetchArticlesForTopic(topic)
         }
     }
+    
+    private func createPlaylist() {
+        Task {
+            audioService.reset()
+            audioService.voiceServiceType = .openai
+            audioService.setArticles(Array(selectedArticles))
+            showingPlayer = true
+            await audioService.startPlayback()
+            // Clear selection after creating playlist
+            selectedArticles.removeAll()
+        }
+    }
 }
 
 // Article List View to reduce duplication
@@ -138,6 +172,7 @@ struct ArticleListView: View {
     let emptyMessage: String
     let audioService: AudioService
     @Binding var showingPlayer: Bool
+    @Binding var selectedArticles: Set<Article>
     
     var body: some View {
         ScrollView {
@@ -158,7 +193,8 @@ struct ArticleListView: View {
                         ArticleCard(
                             article: article,
                             audioService: audioService,
-                            showingPlayer: $showingPlayer
+                            showingPlayer: $showingPlayer,
+                            selectedArticles: $selectedArticles
                         )
                     }
                 }
@@ -166,19 +202,8 @@ struct ArticleListView: View {
             .padding(.vertical)
         }
     }
-    
-    private func handleListenButtonTap() {
-        Task {
-            audioService.reset()
-            audioService.voiceServiceType = .openai
-            audioService.setArticles(articles)
-            showingPlayer = true
-            await audioService.startPlayback()
-        }
-    }
 }
 
-// Custom Tab Label styled like CNN app
 struct TabLabel: View {
     let text: String
     let isSelected: Bool
