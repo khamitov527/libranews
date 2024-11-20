@@ -1,19 +1,21 @@
 import Foundation
 
-struct Topic: Identifiable, Hashable {
-    let id = UUID()
+struct Topic: Identifiable, Hashable, Codable {
+    let id: String
     let name: String
     let icon: String
     let category: String
     
+    // Your existing static available topics
     static let available: [Topic] = [
-        Topic(name: "General News", icon: "newspaper", category: "general"),
-        Topic(name: "Business", icon: "dollarsign.circle", category: "business"),
-        Topic(name: "Technology", icon: "laptopcomputer", category: "technology"),
-        Topic(name: "Entertainment", icon: "play.tv", category: "entertainment"),
-        Topic(name: "Sports", icon: "sportscourt", category: "sports"),
-        Topic(name: "Science", icon: "flask", category: "science"),
-        Topic(name: "Health", icon: "heart", category: "health"),
-        Topic(name: "Politics", icon: "building.columns", category: "politics")
+        Topic(id: "world", name: "World", icon: "globe", category: "news"),
+        Topic(id: "business", name: "Business", icon: "briefcase", category: "news"),
+        Topic(id: "technology", name: "Technology", icon: "laptopcomputer", category: "news"),
+        Topic(id: "science", name: "Science", icon: "atom", category: "news"),
+        Topic(id: "health", name: "Health", icon: "heart", category: "news"),
+        Topic(id: "sports", name: "Sports", icon: "sportscourt", category: "news"),
+        Topic(id: "entertainment", name: "Entertainment", icon: "film", category: "news"),
+        Topic(id: "politics", name: "Politics", icon: "building.columns", category: "news"),
+        Topic(id: "environment", name: "Environment", icon: "leaf", category: "news")
     ]
 }
