@@ -53,8 +53,8 @@ class AudioService: NSObject, ObservableObject {
     /// Step 1: Set articles and start playback
     func setArticles(_ articles: [Article]) {
         print("📚 Setting new articles")
-        reset() // Clear everything first
-        _articles = Array(articles.prefix(3))
+        reset()
+        _articles = articles
         print("📚 Articles set: \(_articles.count) articles")
     }
     

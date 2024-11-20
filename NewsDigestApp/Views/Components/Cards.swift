@@ -92,7 +92,7 @@ struct ArticleCard: View {
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.appBlue)
                         .font(.title2)
                 }
                 
@@ -115,7 +115,7 @@ struct ArticleCard: View {
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.appBlue : Color.clear, lineWidth: 2)
             )
             .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
             .padding(.horizontal)
