@@ -2,6 +2,20 @@
 
 Personalized audio news. A SwiftUI app that summarizes selected articles into 60-second audio clips and organizes them into custom playlists.
 
+<div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+  <img src="NewsDigestApp/Theme/IMG_0284.PNG" alt="Image Description" width="200">
+  <img src="NewsDigestApp/Theme/IMG_0285.PNG" alt="Image Description" width="200">
+  <img src="NewsDigestApp/Theme/IMG_0286.PNG" alt="Image Description" width="200">
+  <img src="NewsDigestApp/Theme/IMG_0287.PNG" alt="Image Description" width="200">
+</div>
+
+<div style="display: flex; justify-content: center; gap: 10px;">
+  <img src="NewsDigestApp/Theme/IMG_0281.PNG" alt="Image Description" width="200">
+  <img src="NewsDigestApp/Theme/IMG_0282.PNG" alt="Image Description" width="200">
+  <img src="NewsDigestApp/Theme/IMG_0283.PNG" alt="Image Description" width="200">
+  <img src="NewsDigestApp/Theme/IMG_0288.PNG" alt="Image Description" width="200">
+</div>
+
 ## Features
 
 - Firebase Authentication 
