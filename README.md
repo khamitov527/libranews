@@ -1,11 +1,13 @@
 # libra news
 
-A SwiftUI app that creates personalized audio news digests from selected sources and topics using NewsAPI and OpenAI TTS.
+Personalized audio news. A SwiftUI app that summarizes selected articles into 60-second audio clips and organizes them into custom playlists.
 
 ## Features
 
-- Topic and source selection from NewsAPI providers
-- Text-to-speech news digest generation
+- Firebase Authentication 
+- Fetching news from NewsAPI and filtering by topics
+- Summarization of articles using OpenAI API
+- Creating audio clips using OpenAI TTS and ElevenLabs
 - Audio playback 
 
 ## Requirements
@@ -23,7 +25,7 @@ A SwiftUI app that creates personalized audio news digests from selected sources
 git clone https://github.com/khamitov527/libranews.git
 ```
 
-2. Add your api keys
+2. Add your api keys 
 - Create `Secrets.swift`
 ```
 enum Secrets {
@@ -33,6 +35,7 @@ enum Secrets {
 }
 
 ```
+- Add GoogleService-Info.plist file with Firebase credentials.
 
 ## License
 
